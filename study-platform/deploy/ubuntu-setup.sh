@@ -61,17 +61,42 @@ else
 fi
 ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/study-platform
 # 不删除 default / 旧项目配置，新域名与旧项目可共存（见 deploy/DEPLOY.md「与旧项目共存」）
-nginx -t
-systemctl enable nginx
 
-# 80 可能已被旧项目 Nginx 占用：勿再起第二个实例，只 reload 配置
-if systemctl is-active --quiet nginx; then
-  systemctl reload nginx
-elif ss -tlnp 2>/dev/null | grep -qE ':80\s'; then
-  echo "==> 80 端口已有进程，跳过 systemctl start，仅 reload 现有 Nginx..."
-  nginx -s reload
-else
-  systemctl start nginx
+reload_nginx_safe() {
+  nginx -t || return 1
+  if systemctl is-active --quiet nginx 2>/dev/null; then
+    systemctl reload nginx && return 0
+  fi
+  local pf pid
+  for pf in /run/nginx.pid /var/run/nginx.pid; do
+    if [ -s "$pf" ]; then
+      pid=$(cat "$pf")
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -HUP "$pid" && echo "   已通过 $pf reload Nginx (pid $pid)" && return 0
+      fi
+    fi
+  done
+  pid=$(pgrep -f 'nginx: master' | head -1)
+  if [ -n "$pid" ]; then
+    kill -HUP "$pid" && echo "   已对 master pid $pid 发送 HUP" && return 0
+  fi
+  if ss -tlnp 2>/dev/null | grep -qE ':80\s'; then
+    echo "⚠️  80 有进程但找不到 Nginx master"
+    return 1
+  fi
+  systemctl start nginx 2>/dev/null || nginx
+  return 0
+}
+
+echo "==> 重载 Nginx 配置..."
+systemctl enable nginx
+set +e
+reload_nginx_safe
+NGINX_OK=$?
+set -e
+if [ "$NGINX_OK" -ne 0 ]; then
+  echo "⚠️  Nginx reload 失败，请手动: kill -HUP \$(pgrep -f 'nginx: master' | head -1)"
+  echo "   然后继续，Node 仍会启动"
 fi
 
 echo "==> 启动 Node（pm2）..."
