@@ -82,100 +82,119 @@ ping 185egugn.cn
 
 ---
 
-## 四、阶段 2：本机准备 & 上传代码
+## 四、阶段 2：用 Git 上传代码（推荐）
 
-### 2.1 确认能 SSH 登录
+### 4.1 本地已初始化 Git
+
+项目目录 `~/Desktop/八股` 已是 Git 仓库，首次提交已完成。  
+**不会提交** `store.json`（含学员 PIN 和登录 token）。
+
+### 4.2 在 Gitee 创建空仓库
+
+1. 打开 [gitee.com](https://gitee.com) 登录
+2. 右上角 **+** → **新建仓库**
+3. 仓库名例如：`bagu` 或 `study-platform`
+4. **不要**勾选「使用 Readme 初始化」（保持空仓库）
+5. 创建后复制 HTTPS 地址，形如：  
+   `https://gitee.com/你的用户名/bagu.git`
+
+### 4.3 本机推送到 Gitee
 
 在 Mac 终端：
 
 ```bash
-ssh root@47.97.176.185
+cd ~/Desktop/八股
+
+# 绑定远程（把 URL 换成你的）
+git remote add origin https://gitee.com/你的用户名/bagu.git
+
+# 推送
+git push -u origin main
 ```
 
-- 首次连接输入 `yes` 确认指纹
-- 密码在 ECS 控制台 → **重置密码** 设置（需重启实例生效）
+首次 push 会提示输入 Gitee 用户名和密码（或私人令牌）。
 
-### 2.2 上传项目到服务器
-
-在 Mac 上（**不要**在 SSH 里执行）：
+### 4.4 以后改代码后更新
 
 ```bash
 cd ~/Desktop/八股
-
-rsync -avz \
-  --exclude 'node_modules' \
-  --exclude '.git' \
-  --exclude '.cursor' \
-  ./ \
-  root@47.97.176.185:/opt/study-platform/
+git add -A
+git commit -m "描述你的修改"
+git push
 ```
-
-上传后服务器目录结构应为：
-
-```
-/opt/study-platform/
-└── study-platform/
-    ├── server/          ← Node 后端
-    ├── public/          ← 前端页面
-    └── deploy/          ← Nginx 配置 & 安装脚本
-```
-
-验证（SSH 里）：
-
-```bash
-ls /opt/study-platform/study-platform/server/index.js
-```
-
-能看到文件即上传成功。
 
 ---
 
-## 五、阶段 3：服务器一键部署
+## 五、阶段 3：服务器 Git 部署
 
-SSH 登录服务器后执行：
+SSH 登录服务器后 **一条命令** 完成克隆 + 安装 + 启动：
+
+```bash
+GIT_REPO='https://gitee.com/你的用户名/bagu.git' \
+TEACHER_PASSWORD='你的强密码' \
+sudo -E bash ubuntu-setup.sh
+```
+
+若已克隆过，第二次只需：
 
 ```bash
 cd /opt/study-platform/study-platform/deploy
-
-# 把 teacher123 换成你的强密码
 TEACHER_PASSWORD='你的强密码' sudo -E bash ubuntu-setup.sh
 ```
 
-脚本会自动完成：
-
-- 安装 Node.js 20、Nginx、pm2
-- `npm install` 安装依赖
-- 配置 Nginx 双域名反代到 `127.0.0.1:3847`
-- pm2 启动并设置开机自启
-
-看到 **✅ 部署完成** 即成功。
-
-### 5.1 部署后自检（服务器上）
+### 5.1 服务器上拉取更新
 
 ```bash
-# Node 是否在跑
-pm2 status
-
-# 本机直连 Node
-curl -I http://127.0.0.1:3847/teacher/
-
-# Nginx 反代是否正常（模拟教师域名）
-curl -I -H "Host: 185egugn.cn" http://127.0.0.1/teacher/
+sudo bash /opt/study-platform/study-platform/deploy/git-pull-update.sh
 ```
-
-应返回 `HTTP/1.1 200` 或 `302`。
-
-### 5.2 浏览器临时访问（DNS 未生效时）
-
-若 DNS 还没生效，可先在服务器 hosts 或等解析完成。  
-DNS 生效后访问：
-
-- http://183ehjez.cn/student/
-- http://185egugn.cn/teacher/
 
 ---
 
-## 六、阶段 4：配置 HTTPS
+## 六、阶段 4（备选）：rsync 上传
+
+不用 Git 时，在 Mac 上：
+
+```bash
+cd ~/Desktop/八股
+rsync -avz --exclude 'node_modules' --exclude '.git' --exclude '.cursor' \
+  ./ root@47.97.176.185:/opt/study-platform/
+```
+
+然后 SSH 执行 `ubuntu-setup.sh`（不设 `GIT_REPO`）。
+
+---
+
+## 七、阶段 5：服务器一键部署
+
+SSH 登录后执行（**先完成 Git 推送**，把 URL 换成你的）：
+
+```bash
+GIT_REPO='https://gitee.com/你的用户名/bagu.git' \
+TEACHER_PASSWORD='你的强密码' \
+sudo -E bash /opt/study-platform/study-platform/deploy/ubuntu-setup.sh
+```
+
+首次若目录为空，先克隆：
+
+```bash
+git clone https://gitee.com/你的用户名/bagu.git /opt/study-platform
+cd /opt/study-platform/study-platform/deploy
+TEACHER_PASSWORD='你的强密码' sudo -E bash ubuntu-setup.sh
+```
+
+看到 **✅ 部署完成** 即成功。
+
+### 7.1 部署后自检
+
+```bash
+pm2 status
+curl -I http://127.0.0.1:3847/teacher/
+curl -I -H "Host: 185egugn.cn" http://127.0.0.1/teacher/
+```
+
+---
+
+## 八、阶段 6：配置 HTTPS
 
 DNS 解析生效后，在服务器执行：
 
