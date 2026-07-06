@@ -57,8 +57,13 @@ ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/study-platform
 # 不删除 default / 旧项目配置，新域名与旧项目可共存（见 deploy/DEPLOY.md「与旧项目共存」）
 nginx -t
 systemctl enable nginx
+
+# 80 可能已被旧项目 Nginx 占用：勿再起第二个实例，只 reload 配置
 if systemctl is-active --quiet nginx; then
   systemctl reload nginx
+elif ss -tlnp 2>/dev/null | grep -qE ':80\s'; then
+  echo "==> 80 端口已有进程，跳过 systemctl start，仅 reload 现有 Nginx..."
+  nginx -s reload
 else
   systemctl start nginx
 fi
