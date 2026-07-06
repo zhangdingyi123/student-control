@@ -373,6 +373,77 @@ nginx -t && systemctl reload nginx
 
 ---
 
+## 附录 C：与旧项目共存（端口 / Nginx 冲突）
+
+若服务器上已有其他项目（例如「直播竞拍」占用了 Nginx 80 端口），会出现：
+
+- 访问 IP 的 `/teacher/` 却打开旧项目页面
+- 学习计划平台需单独部署，靠**域名**区分，不靠 IP
+
+### 诊断（SSH 登录后执行）
+
+```bash
+# 谁占用了 80 / 3847
+ss -tlnp | grep -E ':80|:443|:3847'
+
+# 现有 Nginx 配置
+ls -la /etc/nginx/sites-enabled/
+grep -r "server_name\|proxy_pass\|root " /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null
+
+# 学习计划平台 Node 是否在跑
+pm2 list
+curl -s http://127.0.0.1:3847/teacher/ | head -3
+```
+
+### 方案 A：两个项目共存（推荐）
+
+旧项目继续用 IP 或旧域名；学习计划平台只用新域名。
+
+1. **不要停**旧项目的 Nginx 配置
+2. 部署学习计划平台（`ubuntu-setup.sh` 会新增 `study-platform` 配置，**不删** default）
+3. 确保 `nginx-domains.conf` 已启用：
+
+```bash
+ls /etc/nginx/sites-enabled/study-platform
+nginx -t && systemctl reload nginx
+```
+
+4. **DNS 解析** `183ehjez.cn`、`185egugn.cn` → `47.97.176.185`
+5. 用域名访问（不要用 IP）：
+   - http://183ehjez.cn/student/
+   - http://185egugn.cn/teacher/
+
+Nginx 按 `Host` 头分流：新域名 → `:3847` 学习计划；IP / 其他 → 旧项目。
+
+### 方案 B：停掉旧项目，只跑学习计划
+
+```bash
+# 查看旧项目 pm2 进程
+pm2 list
+pm2 stop <旧项目名>    # 或 pm2 delete <旧项目名>
+
+# 禁用旧 Nginx 站点（文件名以你服务器为准）
+mv /etc/nginx/sites-enabled/旧项目.conf /etc/nginx/sites-enabled/旧项目.conf.bak
+# 或 rm /etc/nginx/conf.d/旧项目.conf
+
+nginx -t && systemctl reload nginx
+```
+
+再部署学习计划平台。
+
+### 3847 端口被占用
+
+```bash
+ss -tlnp | grep 3847
+# 结束占用进程（把 PID 换成上面看到的）
+kill <PID>
+# 或改学习计划端口
+PORT=3850 TEACHER_PASSWORD='xxx' pm2 start index.js --name study-platform
+# 并同步修改 nginx-domains.conf 里 proxy_pass 端口
+```
+
+---
+
 ## 附录 B：一键命令速查
 
 ```bash

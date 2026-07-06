@@ -1,8 +1,8 @@
 #!/bin/bash
 # 在阿里云 ECS（Ubuntu 22.04）上首次部署学习计划平台
 #
-# 方式 A — Git 克隆（推荐）：
-#   GIT_REPO='https://gitee.com/你的用户名/bagu.git' \
+# 方式 A — Git 克隆（GitHub / Gitee 均可）：
+#   GIT_REPO='https://github.com/你的用户名/bagu.git' \
 #   TEACHER_PASSWORD='你的密码' sudo -E bash ubuntu-setup.sh
 #
 # 方式 B — 代码已在 /opt/study-platform（rsync 上传）：
@@ -54,7 +54,7 @@ npm install --production
 echo "==> 配置 Nginx..."
 cp "$APP_DIR/study-platform/deploy/nginx-domains.conf" "$NGINX_SITE"
 ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/study-platform
-rm -f /etc/nginx/sites-enabled/default
+# 不删除 default / 旧项目配置，新域名与旧项目可共存（见 deploy/DEPLOY.md「与旧项目共存」）
 nginx -t
 systemctl enable nginx
 systemctl reload nginx
