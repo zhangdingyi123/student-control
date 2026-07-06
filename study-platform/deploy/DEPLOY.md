@@ -89,30 +89,39 @@ ping 185egugn.cn
 项目目录 `~/Desktop/八股` 已是 Git 仓库，首次提交已完成。  
 **不会提交** `store.json`（含学员 PIN 和登录 token）。
 
-### 4.2 在 Gitee 创建空仓库
+### 4.2 创建远程仓库（GitHub 或 Gitee 均可）
 
-1. 打开 [gitee.com](https://gitee.com) 登录
-2. 右上角 **+** → **新建仓库**
-3. 仓库名例如：`bagu` 或 `study-platform`
-4. **不要**勾选「使用 Readme 初始化」（保持空仓库）
-5. 创建后复制 HTTPS 地址，形如：  
-   `https://gitee.com/你的用户名/bagu.git`
+**GitHub（推荐）**
 
-### 4.3 本机推送到 Gitee
+1. 打开 [github.com/new](https://github.com/new) 登录
+2. Repository name 例如：`bagu`
+3. 选 **Private**（资料库建议私有）
+4. **不要**勾选 Add a README
+5. 复制地址，HTTPS 形如：  
+   `https://github.com/你的用户名/bagu.git`  
+   SSH 形如：  
+   `git@github.com:你的用户名/bagu.git`
 
-在 Mac 终端：
+**Gitee（国内访问更快，步骤相同）**
+
+1. [gitee.com](https://gitee.com) → 新建仓库 → 不初始化 README  
+2. 地址形如：`https://gitee.com/你的用户名/bagu.git`
+
+### 4.3 本机推送到远程
+
+在 Mac 终端（把 URL 换成你的 GitHub 地址）：
 
 ```bash
 cd ~/Desktop/八股
 
-# 绑定远程（把 URL 换成你的）
-git remote add origin https://gitee.com/你的用户名/bagu.git
+# 若之前加过 origin，先删掉：git remote remove origin
+git remote add origin https://github.com/zhangdingyi123/student-control.git
 
-# 推送
 git push -u origin main
 ```
 
-首次 push 会提示输入 Gitee 用户名和密码（或私人令牌）。
+- **HTTPS**：输入 GitHub 用户名 + [Personal Access Token](https://github.com/settings/tokens)（不是登录密码）
+- **SSH**：本机已配 `~/.ssh/id_ed25519` 且加到 GitHub 时，可用 `git@github.com:你的用户名/bagu.git`
 
 ### 4.4 以后改代码后更新
 
@@ -130,7 +139,7 @@ git push
 SSH 登录服务器后 **一条命令** 完成克隆 + 安装 + 启动：
 
 ```bash
-GIT_REPO='https://gitee.com/你的用户名/bagu.git' \
+GIT_REPO='https://github.com/zhangdingyi123/student-control.git' \
 TEACHER_PASSWORD='你的强密码' \
 sudo -E bash ubuntu-setup.sh
 ```
@@ -169,7 +178,7 @@ rsync -avz --exclude 'node_modules' --exclude '.git' --exclude '.cursor' \
 SSH 登录后执行（**先完成 Git 推送**，把 URL 换成你的）：
 
 ```bash
-GIT_REPO='https://gitee.com/你的用户名/bagu.git' \
+GIT_REPO='https://github.com/zhangdingyi123/student-control.git' \
 TEACHER_PASSWORD='你的强密码' \
 sudo -E bash /opt/study-platform/study-platform/deploy/ubuntu-setup.sh
 ```
@@ -177,7 +186,7 @@ sudo -E bash /opt/study-platform/study-platform/deploy/ubuntu-setup.sh
 首次若目录为空，先克隆：
 
 ```bash
-git clone https://gitee.com/你的用户名/bagu.git /opt/study-platform
+git clone https://github.com/zhangdingyi123/student-control.git /opt/study-platform
 cd /opt/study-platform/study-platform/deploy
 TEACHER_PASSWORD='你的强密码' sudo -E bash ubuntu-setup.sh
 ```
