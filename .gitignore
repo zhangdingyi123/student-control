@@ -3,6 +3,10 @@
 
 # 运行时数据（含学员 PIN、登录 token，勿提交）
 study-platform/server/data/store.json
+study-platform/server/data/store.json.migrated
+study-platform/server/data/platform.db
+study-platform/server/data/platform.db-wal
+study-platform/server/data/platform.db-shm
 
 # 系统 / IDE
 .DS_Store

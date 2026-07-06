@@ -1,5 +1,5 @@
 #!/bin/bash
-# 服务器上拉取最新代码并重启（保留 data/store.json）
+# 服务器上拉取最新代码并重启（保留 data/platform.db）
 set -e
 
 APP_DIR="/opt/study-platform"

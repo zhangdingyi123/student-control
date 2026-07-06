@@ -14,6 +14,7 @@
 | 学员域名 | `183ehjez.cn` |
 | 教师域名 | `185egugn.cn` |
 | Node 端口（仅本机） | `3847` |
+| Node 版本 | `>= 22.5`（内置 SQLite，无需额外数据库） |
 | 对外端口 | `80` / `443`（Nginx 反代） |
 
 | 访问地址 | 说明 |
@@ -87,7 +88,7 @@ ping 185egugn.cn
 ### 4.1 本地已初始化 Git
 
 项目目录 `~/Desktop/八股` 已是 Git 仓库，首次提交已完成。  
-**不会提交** `store.json`（含学员 PIN 和登录 token）。
+**不会提交** `platform.db`（含学员 PIN 和登录 token）。
 
 ### 4.2 创建远程仓库（GitHub 或 Gitee 均可）
 
@@ -302,15 +303,17 @@ pm2 save
 学员打卡、课表数据在：
 
 ```
-/opt/study-platform/study-platform/server/data/store.json
+/opt/study-platform/study-platform/server/data/platform.db
 ```
 
 定期下载备份：
 
 ```bash
-scp root@47.97.176.185:/opt/study-platform/study-platform/server/data/store.json \
-  ~/Desktop/store-backup-$(date +%Y%m%d).json
+scp root@47.97.176.185:/opt/study-platform/study-platform/server/data/platform.db \
+  ~/Desktop/platform-backup-$(date +%Y%m%d).db
 ```
+
+若服务器上仍有旧版 `store.json`，首次启动新版服务时会自动迁移到 `platform.db`。
 
 ---
 

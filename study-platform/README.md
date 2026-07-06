@@ -2,6 +2,8 @@
 
 ## 启动
 
+需要 **Node.js 22.5+**（使用内置 `node:sqlite`，无需安装 MySQL 等外部数据库）。
+
 ```bash
 cd study-platform/server
 npm install
@@ -42,7 +44,9 @@ TEACHER_PASSWORD=你的密码 npm start
 
 ## 数据存储
 
-进度保存在 `server/data/store.json`，重启服务不丢失。
+学员、计划、打卡数据保存在 SQLite 数据库 `server/data/platform.db`，重启服务不丢失。
+
+首次启动时，若存在旧的 `store.json` 会自动迁移到数据库并备份为 `store.json.migrated`。
 
 ## 扩展内容（不限于八股）
 
@@ -51,7 +55,7 @@ TEACHER_PASSWORD=你的密码 npm start
 | 文件 | 作用 |
 |------|------|
 | `server/data/platform.json` | 平台名称、任务标签、资料库、任务预设 |
-| `server/data/store.json` | 学员、计划、打卡数据 |
+| `server/data/platform.db` | 学员、计划、打卡数据（SQLite） |
 
 ### 加一个新资料库（例如考研英语、前端课程）
 

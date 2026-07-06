@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const pu = require('./planUtils');
@@ -12,38 +11,16 @@ const resources = require('./resources');
 const hot100 = require('./hot100');
 const lcUrls = require('./lcUrls');
 const studyLinks = require('./studyLinks');
+const { readStore, writeStore, ensureDataFile } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3847;
-const DATA_FILE = path.join(__dirname, 'data', 'store.json');
 const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || 'teacher123';
 
 app.set('trust proxy', true);
 app.use(express.json({ limit: '2mb' }));
 app.use(domains.domainRouter);
 app.use(express.static(path.join(__dirname, '../public')));
-
-function ensureDataFile() {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ students: [], sessions: {}, plans: [], activePlanId: null }, null, 2));
-  }
-}
-
-function readStore() {
-  ensureDataFile();
-  const store = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  const migrated = pu.migrateStore(store);
-  if (JSON.stringify(migrated) !== JSON.stringify(store)) {
-    writeStore(migrated);
-  }
-  return migrated;
-}
-
-function writeStore(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
 
 function hashToken() {
   return crypto.randomBytes(24).toString('hex');

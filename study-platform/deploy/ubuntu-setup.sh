@@ -23,8 +23,8 @@ echo "==> 安装依赖..."
 apt-get update -qq
 apt-get install -y nginx curl git
 
-if ! command -v node &>/dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+if ! command -v node &>/dev/null || [ "$(node -p 'process.versions.node.split(\".\")[0]')" -lt 22 ]; then
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 fi
 
@@ -44,10 +44,8 @@ if [ ! -f "$SERVER_DIR/index.js" ]; then
   exit 1
 fi
 
-# 首次部署：从示例生成空数据文件（store.json 不入库）
-if [ ! -f "$SERVER_DIR/data/store.json" ]; then
-  cp "$SERVER_DIR/data/store.json.example" "$SERVER_DIR/data/store.json"
-fi
+# 首次部署：数据由 SQLite 自动初始化（platform.db 不入库）
+# 若存在旧版 store.json，服务启动时会自动迁移
 
 echo "==> 安装 Node 依赖..."
 cd "$SERVER_DIR"

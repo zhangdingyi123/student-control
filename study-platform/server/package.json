@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "后端面试学习计划 - 学员打卡 & 教师看板",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js"
