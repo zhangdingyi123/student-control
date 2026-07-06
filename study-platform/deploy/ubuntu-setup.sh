@@ -16,6 +16,8 @@ NGINX_SITE="/etc/nginx/sites-available/study-platform"
 TEACHER_PW="${TEACHER_PASSWORD:-teacher123}"
 GIT_REPO="${GIT_REPO:-}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
+# 对外端口：8088 与旧项目 80 共存；设为 80 则走 nginx-domains.conf（需域名）
+NGINX_PORT="${NGINX_PORT:-8088}"
 
 echo "==> 安装依赖..."
 apt-get update -qq
@@ -51,8 +53,12 @@ echo "==> 安装 Node 依赖..."
 cd "$SERVER_DIR"
 npm install --production
 
-echo "==> 配置 Nginx..."
-cp "$APP_DIR/study-platform/deploy/nginx-domains.conf" "$NGINX_SITE"
+echo "==> 配置 Nginx（对外端口 ${NGINX_PORT}）..."
+if [ "$NGINX_PORT" = "80" ]; then
+  cp "$APP_DIR/study-platform/deploy/nginx-domains.conf" "$NGINX_SITE"
+else
+  cp "$APP_DIR/study-platform/deploy/nginx-port${NGINX_PORT}.conf" "$NGINX_SITE"
+fi
 ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/study-platform
 # 不删除 default / 旧项目配置，新域名与旧项目可共存（见 deploy/DEPLOY.md「与旧项目共存」）
 nginx -t
@@ -78,6 +84,12 @@ pm2 startup systemd -u root --hp /root 2>/dev/null || pm2 startup
 echo ""
 echo "✅ 部署完成"
 echo "   Node:  http://127.0.0.1:3847"
-echo "   学员:  http://183ehjez.cn/student/"
-echo "   教师:  http://185egugn.cn/teacher/"
+if [ "$NGINX_PORT" = "80" ]; then
+  echo "   学员:  http://183ehjez.cn/student/"
+  echo "   教师:  http://185egugn.cn/teacher/"
+else
+  echo "   学员:  http://47.97.176.185:${NGINX_PORT}/student/"
+  echo "   教师:  http://47.97.176.185:${NGINX_PORT}/teacher/"
+  echo "   （DNS 生效后也可 http://183ehjez.cn:${NGINX_PORT}/student/ ）"
+fi
 echo "   教师密码: $TEACHER_PW"
