@@ -1,0 +1,1001 @@
+<h1 id="redis-面试题">Redis 面试题</h1>
+<hr />
+<h2 id="数据结构">1. 数据结构</h2>
+<h3 id="问redis-五种基本类型及底层实现">问：Redis
+五种基本类型及底层实现？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>底层实现</th>
+<th>应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>String</td>
+<td>SDS（简单动态字符串）</td>
+<td>缓存、计数器、分布式锁</td>
+</tr>
+<tr>
+<td>Hash</td>
+<td>压缩列表 / 哈希表</td>
+<td>对象缓存、购物车</td>
+</tr>
+<tr>
+<td>List</td>
+<td>压缩列表 / 双向链表</td>
+<td>消息队列、时间线</td>
+</tr>
+<tr>
+<td>Set</td>
+<td>整数集合 / 哈希表</td>
+<td>去重、共同关注</td>
+</tr>
+<tr>
+<td>ZSet</td>
+<td>压缩列表 / 跳表</td>
+<td>排行榜</td>
+</tr>
+</tbody>
+</table>
+<p><strong>编码转换</strong>：元素少且值小时用压缩列表/listpack，超过阈值转哈希表/跳表。</p>
+<hr />
+<h3 id="问set-和-zset-的区别zset-在项目里怎么用">问：Set 和 ZSet
+的区别？ZSet 在项目里怎么用？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Set</th>
+<th>ZSet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>排序</td>
+<td>无序</td>
+<td>按 score 有序</td>
+</tr>
+<tr>
+<td>底层</td>
+<td>intset / hashtable</td>
+<td>listpack / skiplist + dict</td>
+</tr>
+<tr>
+<td>场景</td>
+<td>去重、共同关注</td>
+<td>排行榜、延迟队列</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ZSet 项目用法</strong>： - <strong>排行榜</strong>：score
+为分数，<code>ZREVRANGE</code> 取 Top N -
+<strong>延迟队列</strong>：score
+为执行时间戳，<code>ZRANGEBYSCORE</code> 取到期任务 -
+<strong>限流滑动窗口</strong>：score 为时间戳，按窗口清理</p>
+<hr />
+<h3
+id="问跳表是怎么实现的为什么-redis-用跳表不用红黑树">问：跳表是怎么实现的？为什么
+Redis 用跳表不用红黑树？</h3>
+<p><strong>答：</strong>
+跳表是多层有序链表，高层节点稀疏，查找时「跳跃」定位，复杂度
+O(logN)。</p>
+<p><strong>Redis 选择跳表</strong>： 1.
+实现简单，范围查询友好（链表遍历） 2. 支持 O(logN) 查找和 O(1) 头尾操作
+3. 并发场景下红黑树旋转复杂</p>
+<p><strong>层高确定</strong>：随机数 &lt; 0.25 则层数 +1，最大 64
+层。</p>
+<hr />
+<h3 id="问sds-和-c-字符串的区别">问：SDS 和 C 字符串的区别？</h3>
+<p><strong>答：</strong> - O(1) 获取长度（len 字段） -
+杜绝缓冲区溢出（自动扩容） - 减少内存重分配（空间预分配、惰性释放） -
+二进制安全（可存 <code>\0</code>） - 兼容部分 C 字符串函数</p>
+<hr />
+<h2 id="线程模型">2. 线程模型</h2>
+<h3 id="问redis-为什么快">问：Redis 为什么快？</h3>
+<p><strong>答：</strong> 1. <strong>纯内存</strong>操作 2.
+<strong>单线程</strong>执行命令，无锁竞争（6.0 前） 3. <strong>IO
+多路复用</strong>（epoll）处理并发连接 4. 高效数据结构 5.
+避免上下文切换</p>
+<hr />
+<h3 id="问redis-为什么用-io-多路复用网络模型是什么">问：Redis 为什么用
+IO 多路复用？网络模型是什么？</h3>
+<p><strong>答：</strong> 单线程若阻塞等待每个客户端
+IO，无法服务其他连接。<strong>IO 多路复用</strong>用一个线程监听多个
+socket 就绪事件（Linux <strong>epoll</strong>）。</p>
+<p><strong>流程</strong>： 1. 客户端 fd 注册到 epoll 监听列表 2. epoll
+等待任意 fd 可读/可写 3. 就绪后事件处理器读写 query buffer、执行命令</p>
+<p><strong>网络模型</strong>： - <strong>6.0 前</strong>：单 Reactor
+单线程（命令执行 + 网络 IO 都在主线程） - <strong>6.0 后</strong>：多
+Reactor，<strong>网络 IO
+多线程</strong>，<strong>命令执行仍单线程</strong></p>
+<p><strong>BIO 后台线程</strong>：异步关闭文件、AOF fsync、lazy free 大
+key 释放。</p>
+<hr />
+<h3 id="问为什么使用-redis和-mysql-比快在哪">问：为什么使用 Redis？和
+MySQL 比快在哪？</h3>
+<p><strong>答：</strong> <strong>为什么用 Redis</strong>： -
+纯内存，读写 μs 级 - 丰富数据结构（String/Hash/ZSet 等） -
+持久化、主从、集群 - 单线程无锁，实现简单</p>
+<p><strong>比 MySQL 快</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Redis</th>
+<th>MySQL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>存储</td>
+<td>内存</td>
+<td>磁盘 + Buffer Pool</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>KV + 结构</td>
+<td>关系型 + SQL 解析</td>
+</tr>
+<tr>
+<td>场景</td>
+<td>缓存、计数、排行榜</td>
+<td>持久化、复杂查询、事务</td>
+</tr>
+</tbody>
+</table>
+<p><strong>定位</strong>：Redis 是缓存/加速层，MySQL
+是数据持久化主库，互补而非替代。</p>
+<hr />
+<h3 id="问本地缓存和-redis-缓存怎么选">问：本地缓存和 Redis
+缓存怎么选？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>本地缓存（Caffeine/Guava）</th>
+<th>Redis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>速度</td>
+<td>最快（进程内）</td>
+<td>网络 RTT</td>
+</tr>
+<tr>
+<td>一致性</td>
+<td>多实例不一致</td>
+<td>集中式一致</td>
+</tr>
+<tr>
+<td>容量</td>
+<td>受 JVM 堆限制</td>
+<td>独立内存</td>
+</tr>
+<tr>
+<td>场景</td>
+<td>热 key、配置、字典</td>
+<td>共享缓存、分布式锁</td>
+</tr>
+</tbody>
+</table>
+<p><strong>常见架构</strong>：本地缓存（L1）+ Redis（L2）+
+DB（L3）。</p>
+<hr />
+<h3 id="问redis-6.0-为什么引入多线程">问：Redis 6.0
+为什么引入多线程？</h3>
+<p><strong>答：</strong> 命令执行仍单线程，多线程仅用于 <strong>网络
+IO</strong>（读请求、写响应），解决大并发下网络 IO
+成为瓶颈的问题。默认关闭，需配置
+<code>io-threads-do-reads yes</code>。</p>
+<hr />
+<h2 id="持久化">3. 持久化</h2>
+<h3 id="问rdb-和-aof-的区别">问：RDB 和 AOF 的区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>RDB</th>
+<th>AOF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原理</td>
+<td>定时快照</td>
+<td>记录每条写命令</td>
+</tr>
+<tr>
+<td>恢复速度</td>
+<td>快</td>
+<td>慢</td>
+</tr>
+<tr>
+<td>数据安全</td>
+<td>可能丢最后一次快照后的数据</td>
+<td>更安全（everysec）</td>
+</tr>
+<tr>
+<td>文件大小</td>
+<td>小（压缩）</td>
+<td>大</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>fork 子进程有开销</td>
+<td>写盘有开销</td>
+</tr>
+</tbody>
+</table>
+<p><strong>混合持久化</strong>（Redis 4.0+）：AOF 重写时前半 RDB 格式 +
+后半 AOF 格式。</p>
+<hr />
+<h3 id="问rdb-和-aof-怎么选持久化时-fork-有什么问题">问：RDB 和 AOF
+怎么选？持久化时 fork 有什么问题？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可容忍分钟级丢失</td>
+<td>RDB（定时快照）</td>
+</tr>
+<tr>
+<td>数据安全优先</td>
+<td>AOF everysec</td>
+</tr>
+<tr>
+<td>兼顾</td>
+<td>混合持久化</td>
+</tr>
+</tbody>
+</table>
+<p><strong>fork 问题</strong>： - 数据量大时 fork 阻塞主线程（ms~s） -
+写密集时 copy-on-write 复制页多，内存可能翻倍 - 优化：关闭
+THP、<code>maxmemory</code> 控制实例大小</p>
+<hr />
+<h3 id="问aof-重写是怎么工作的">问：AOF 重写是怎么工作的？</h3>
+<p><strong>答：</strong> 1. 主进程 fork 子进程（copy-on-write） 2.
+子进程根据内存数据生成新 AOF（合并冗余命令） 3. 重写期间新命令写入 AOF
+重写缓冲区 4. 完成后追加缓冲区内容，替换旧 AOF</p>
+<hr />
+<h2 id="缓存问题必考">4. 缓存问题（必考）</h2>
+<h3
+id="问缓存穿透击穿雪崩的区别和解决方案">问：缓存穿透、击穿、雪崩的区别和解决方案？</h3>
+<p><strong>答：</strong></p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>问题</th>
+<th>原因</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>穿透</strong></td>
+<td>查不存在的数据，请求打到 DB</td>
+<td>布隆过滤器、缓存空值（短 TTL）</td>
+</tr>
+<tr>
+<td><strong>击穿</strong></td>
+<td>热点 key 过期，大量并发打 DB</td>
+<td>互斥锁（只一个线程查 DB）、逻辑过期</td>
+</tr>
+<tr>
+<td><strong>雪崩</strong></td>
+<td>大量 key 同时过期或 Redis 宕机</td>
+<td>过期时间加随机值、多级缓存、熔断降级、Redis 集群</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="集群">5. 集群</h2>
+<h3 id="问redis-主从复制原理">问：Redis 主从复制原理？</h3>
+<p><strong>答：</strong> 1. 从库发送 <code>PSYNC</code> 命令 2.
+首次：<strong>全量同步</strong>（主库 bgsave RDB → 发送 → 从库加载） 3.
+断线重连：<strong>增量同步</strong>（复制积压缓冲区 repl_backlog +
+offset）</p>
+<hr />
+<h3 id="问哨兵sentinel的作用">问：哨兵（Sentinel）的作用？</h3>
+<p><strong>答：</strong> 1. <strong>监控</strong>：检测主从节点是否正常
+2. <strong>通知</strong>：故障时通知客户端 3.
+<strong>自动故障转移</strong>：选举 Leader 哨兵 → 从库中选新 Master →
+通知客户端</p>
+<p>选主算法：类似 Raft，先选 Leader 哨兵 → 从库中选新 Master（优先级
+&gt; offset &gt; runid）。</p>
+<hr />
+<h3 id="问redis-主从和-cluster-能保证强一致吗">问：Redis 主从和 Cluster
+能保证强一致吗？</h3>
+<p><strong>答：</strong> <strong>不能强一致</strong>，默认
+<strong>最终一致</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>一致性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主从</td>
+<td>异步复制，主库写入后从库可能延迟</td>
+</tr>
+<tr>
+<td>哨兵</td>
+<td>故障转移期间可能丢最后几条写</td>
+</tr>
+<tr>
+<td>Cluster</td>
+<td>异步复制 + 槽迁移窗口</td>
+</tr>
+</tbody>
+</table>
+<p><strong>需要更强一致</strong>：Wait 命令（等待 N 个从库确认）、Redis
+企业版或业务层补偿。</p>
+<hr />
+<h3 id="问cluster-客户端怎么知道访问哪个分片">问：Cluster
+客户端怎么知道访问哪个分片？</h3>
+<p><strong>答：</strong> 1. 客户端缓存 <strong>slot → 节点</strong>
+映射表 2. <code>CRC16(key) &amp; 16383</code> 计算 slot 3.
+访问错误节点时返回 <strong>MOVED</strong>（永久迁移）或
+<strong>ASK</strong>（临时迁移），客户端更新映射</p>
+<p><strong>Smart Client</strong>（如
+Lettuce、JedisCluster）自动处理重定向。</p>
+<hr />
+<h3 id="问redis-cluster-分片原理">问：Redis Cluster 分片原理？</h3>
+<p><strong>答：</strong> - 16384 个哈希槽（slot） -
+<code>slot = CRC16(key) &amp; 16383</code> - 每个节点负责一部分槽 -
+客户端访问错误节点时返回 MOVED/ASK 重定向</p>
+<hr />
+<h2 id="分布式锁重点">6. 分布式锁（重点）</h2>
+<h3 id="问redis-分布式锁的实现原理加锁要满足哪三个条件">问：Redis
+分布式锁的实现原理？加锁要满足哪三个条件？</h3>
+<p><strong>答：</strong> Redis
+是共享存储、读写性能高，适合实现分布式锁。</p>
+<p><strong>加锁三个条件</strong>： 1.
+<strong>互斥</strong>：同一时刻只有一个客户端持有锁 →
+<code>SET key value NX</code> 2.
+<strong>防死锁</strong>：客户端崩溃时锁能自动释放 → <code>EX/PX</code>
+设置过期时间 3. <strong>防误删</strong>：锁 value 标识持有者，解锁时校验
+→ UUID + Lua 脚本</p>
+<p><strong>加锁</strong>：</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> lock:order:1001 <span class="st">&quot;uuid-xxx&quot;</span> NX EX 30</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># NX：key 不存在才设置；EX 30：30 秒过期</span></span></code></pre></div>
+<p><strong>解锁</strong>（必须 Lua，保证「判断 + 删除」原子性）：</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&quot;get&quot;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span> <span class="op">==</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="cf">then</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&quot;del&quot;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p><strong>为什么不用 GET + DEL
+两步</strong>：两步之间锁可能过期被他人获取，你会删掉别人的锁。</p>
+<hr />
+<h3 id="问redis-分布式锁有哪些常见问题怎么解决">问：Redis
+分布式锁有哪些常见问题？怎么解决？</h3>
+<p><strong>答：</strong></p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>问题</th>
+<th>原因</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>误删锁</strong></td>
+<td>线程 A 超时，线程 B 加锁，A finally 删了 B 的锁</td>
+<td>value 用 UUID，Lua 校验后再删</td>
+</tr>
+<tr>
+<td><strong>锁过期业务未完成</strong></td>
+<td>EX 30s 但业务跑 60s</td>
+<td>Redisson 看门狗续期；或合理评估 TTL</td>
+</tr>
+<tr>
+<td><strong>不可重入</strong></td>
+<td>同一线程重复加锁会失败</td>
+<td>Redisson 可重入锁（Hash 记录重入次数）</td>
+</tr>
+<tr>
+<td><strong>主从切换丢锁</strong></td>
+<td>主库加锁成功但未同步到从库，主宕机，从升主后锁丢失</td>
+<td>RedLock；或 ZK/Etcd</td>
+</tr>
+<tr>
+<td><strong>非原子加锁</strong></td>
+<td>SETNX + EXPIRE 两条命令</td>
+<td>必须一条 <code>SET NX EX</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问redisson-看门狗watchdog是什么">问：Redisson
+看门狗（Watchdog）是什么？</h3>
+<p><strong>答：</strong> Redisson 加锁时 <strong>默认不指定
+leaseTime</strong>，Watchdog 后台线程每
+<strong>10s</strong>（leaseTime/3）续期一次，默认 leaseTime
+<strong>30s</strong>，业务未完成则自动续期。</p>
+<p><strong>指定了 leaseTime</strong> 则不会启动
+Watchdog，到期自动释放。</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>RLock lock <span class="op">=</span> redisson<span class="op">.</span><span class="fu">getLock</span><span class="op">(</span><span class="st">&quot;lock:order:1001&quot;</span><span class="op">);</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>lock<span class="op">.</span><span class="fu">lock</span><span class="op">();</span>        <span class="co">// 看门狗续期</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">// lock.lock(10, TimeUnit.SECONDS);  // 10s 后释放，无看门狗</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> <span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// 业务逻辑</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="cf">finally</span> <span class="op">{</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    lock<span class="op">.</span><span class="fu">unlock</span><span class="op">();</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><strong>原理</strong>：Lua 脚本加锁，Hash 结构
+<code>key → {线程ID: 重入次数}</code>，支持可重入。</p>
+<hr />
+<h3 id="问redlock-算法是什么有什么争议">问：RedLock
+算法是什么？有什么争议？</h3>
+<p><strong>答：</strong> <strong>RedLock</strong>（Redis 作者
+Antirez）：在 <strong>N 个独立 Redis Master</strong>（通常 5
+个）上依次加锁，<strong>过半成功</strong>且总耗时 &lt;
+锁有效期，才算加锁成功。</p>
+<p><strong>步骤</strong>： 1. 记录当前时间 T1 2. 依次向 N 个节点
+<code>SET key value NX PX ttl</code> 3. 成功数 ≥ N/2+1 且 T2-T1 &lt;
+有效时间 → 成功 4. 失败则向所有节点发起解锁</p>
+<p><strong>Martin Kleppmann 质疑</strong>： -
+依赖系统时钟，时钟跳变可能导致锁同时失效 - GC 长时间 STW
+后线程恢复，可能误以为锁仍有效 - 主从异步复制下，RedLock 仍可能丢锁</p>
+<p><strong>生产建议</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>适用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单 Redis + Redisson 看门狗</td>
+<td>大多数业务，可接受极低概率问题</td>
+</tr>
+<tr>
+<td>RedLock</td>
+<td>多独立 Master，要求较高</td>
+</tr>
+<tr>
+<td><strong>ZooKeeper / Etcd</strong></td>
+<td>强一致、临时顺序节点，金融级</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问redis-锁-vs-zookeeper-锁怎么选">问：Redis 锁 vs ZooKeeper
+锁怎么选？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Redis</th>
+<th>ZooKeeper / Etcd</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>性能</td>
+<td>高（内存）</td>
+<td>较低（网络+磁盘）</td>
+</tr>
+<tr>
+<td>一致性</td>
+<td>最终一致，主从可能丢锁</td>
+<td>强一致（ZAB/Raft）</td>
+</tr>
+<tr>
+<td>实现</td>
+<td>SET NX + Lua</td>
+<td>临时顺序节点，最小序号获锁</td>
+</tr>
+<tr>
+<td>续期</td>
+<td>看门狗 / TTL</td>
+<td>会话心跳</td>
+</tr>
+<tr>
+<td>场景</td>
+<td>高并发、允许极低失败率</td>
+<td>强一致、分布式协调</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问什么场景需要分布式锁">问：什么场景需要分布式锁？</h3>
+<p><strong>答：</strong> <strong>需要</strong>：多进程/多机器对
+<strong>同一资源</strong> 互斥访问 - 库存扣减、订单号生成 -
+定时任务集群只跑一个实例 - 缓存击穿重建（互斥查 DB） -
+支付防重复提交</p>
+<p><strong>不需要</strong>： - 单 JVM 内 → <code>synchronized</code> /
+<code>ReentrantLock</code> - 数据库能扛 →
+<code>SELECT FOR UPDATE</code>（性能差） - 可接受最终一致 →
+消息队列串行消费</p>
+<p><strong>秒杀优化</strong>：纯 Redis 锁串行化吞吐低，可用
+<strong>分段锁</strong>（<code>lock:stock:{skuId % 10}</code>）或 Redis
+原子扣减 + MQ 异步落库。</p>
+<hr />
+<h3 id="问用-redis-锁实现缓存击穿互斥重建">问：用 Redis
+锁实现缓存击穿互斥重建？</h3>
+<p><strong>答：</strong> 热点 key 过期时，大量请求打 DB。用锁保证
+<strong>只有一个线程</strong> 查 DB 重建缓存：</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> lockKey <span class="op">=</span> <span class="st">&quot;lock:cache:&quot;</span> <span class="op">+</span> key<span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> val <span class="op">=</span> redis<span class="op">.</span><span class="fu">get</span><span class="op">(</span>key<span class="op">);</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>val <span class="op">==</span> <span class="kw">null</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>redis<span class="op">.</span><span class="fu">set</span><span class="op">(</span>lockKey<span class="op">,</span> <span class="st">&quot;1&quot;</span><span class="op">,</span> <span class="st">&quot;NX&quot;</span><span class="op">,</span> <span class="st">&quot;EX&quot;</span><span class="op">,</span> <span class="dv">10</span><span class="op">))</span> <span class="op">{</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span> <span class="op">{</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>            val <span class="op">=</span> db<span class="op">.</span><span class="fu">query</span><span class="op">(</span>key<span class="op">);</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>            redis<span class="op">.</span><span class="fu">setex</span><span class="op">(</span>key<span class="op">,</span> <span class="dv">3600</span><span class="op">,</span> val<span class="op">);</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span> <span class="cf">finally</span> <span class="op">{</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>            redis<span class="op">.</span><span class="fu">eval</span><span class="op">(</span>unlockScript<span class="op">,</span> lockKey<span class="op">,</span> uniqueId<span class="op">);</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Thread</span><span class="op">.</span><span class="fu">sleep</span><span class="op">(</span><span class="dv">50</span><span class="op">);</span>  <span class="co">// 等待其他线程重建</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        val <span class="op">=</span> redis<span class="op">.</span><span class="fu">get</span><span class="op">(</span>key<span class="op">);</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>与 <strong>逻辑过期</strong> 对比：逻辑过期不阻塞，返回旧值 +
+异步更新；互斥锁会短暂等待。</p>
+<hr />
+<h3 id="问redis-除了缓存还有哪些应用">问：Redis
+除了缓存还有哪些应用？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>缓存</td>
+<td>Cache Aside，加速读</td>
+</tr>
+<tr>
+<td>分布式锁</td>
+<td>SET NX EX + Lua</td>
+</tr>
+<tr>
+<td>计数器</td>
+<td>INCR 限流、点赞数</td>
+</tr>
+<tr>
+<td>排行榜</td>
+<td>ZSet</td>
+</tr>
+<tr>
+<td>消息队列</td>
+<td>List LPUSH/BRPOP、Stream</td>
+</tr>
+<tr>
+<td>会话</td>
+<td>Hash 存 Session</td>
+</tr>
+<tr>
+<td>地理位置</td>
+<td>GEO 命令</td>
+</tr>
+<tr>
+<td>布隆过滤器</td>
+<td>防穿透（RedisBloom）</td>
+</tr>
+<tr>
+<td>延迟队列</td>
+<td>ZSet score=时间戳</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="事务">7. 事务</h2>
+<h3 id="问redis-事务multiexec了解吗">问：Redis
+事务（MULTI/EXEC）了解吗？</h3>
+<p><strong>答：</strong> - <code>MULTI</code> 开启，<code>EXEC</code>
+执行，<code>DISCARD</code> 取消 - 命令入队，不执行；<code>EXEC</code>
+时一次性执行 - <strong>不保证原子性</strong>：某条命令失败不影响其他命令
+- <strong>不支持回滚</strong> - 用 <code>WATCH</code>
+实现乐观锁（CAS）</p>
+<hr />
+<h3 id="问除了-lua还有什么方式保证-redis-原子性">问：除了
+Lua，还有什么方式保证 Redis 原子性？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>单条命令</strong></td>
+<td>GET/SET/INCR/DECR 等本身原子（单线程）</td>
+</tr>
+<tr>
+<td><strong>Lua 脚本</strong></td>
+<td>多条命令整体执行，推荐</td>
+</tr>
+<tr>
+<td><strong>MULTI/EXEC</strong></td>
+<td>批量执行，某条失败<strong>不回滚</strong>，原子性弱于 Lua</td>
+</tr>
+<tr>
+<td><strong>Redis 模块</strong></td>
+<td>自定义原子操作</td>
+</tr>
+</tbody>
+</table>
+<p><strong>分布式锁解锁、库存扣减</strong>等必须用 <strong>Lua</strong>
+保证「判断 + 修改」原子性。</p>
+<hr />
+<h2 id="过期删除与淘汰">8. 过期删除与淘汰</h2>
+<h3 id="问redis-过期-key-怎么删除">问：Redis 过期 key 怎么删除？</h3>
+<p><strong>答：</strong> 1.
+<strong>惰性删除</strong>：访问时检查是否过期 2.
+<strong>定期删除</strong>：每秒随机抽查部分 key</p>
+<p><strong>过期删除 vs 内存淘汰</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>过期删除</th>
+<th>内存淘汰</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>触发</td>
+<td>key 设置了 TTL</td>
+<td>内存达到 maxmemory</td>
+</tr>
+<tr>
+<td>目的</td>
+<td>清理过期 key</td>
+<td>腾出空间给新写入</td>
+</tr>
+<tr>
+<td>策略</td>
+<td>惰性 + 定期</td>
+<td>LRU/LFU/Random 等</td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>：过期 key
+<strong>不会立即删除</strong>，惰性访问时才删或定期抽查，可能短暂占用内存。</p>
+<hr />
+<h3 id="问内存满了怎么办淘汰策略">问：内存满了怎么办？淘汰策略？</h3>
+<p><strong>答：</strong> <code>maxmemory-policy</code>： -
+<code>noeviction</code>：不淘汰，写操作报错（默认） -
+<code>allkeys-lru</code>：所有 key 中 LRU 淘汰 -
+<code>volatile-lru</code>：设了过期时间的 key 中 LRU 淘汰 -
+<code>allkeys-random</code> / <code>volatile-random</code> -
+<code>volatile-ttl</code>：淘汰 TTL 最短的 - <code>allkeys-lfu</code> /
+<code>volatile-lfu</code>（Redis 4.0+）</p>
+<hr />
+<h2 id="跳表-vs-b-树">9. 跳表 vs B+ 树</h2>
+<h3
+id="问redis-跳表和-mysql-b-树有什么区别为什么不同场景不同选择">问：Redis
+跳表和 MySQL B+ 树有什么区别？为什么不同场景不同选择？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Redis 跳表</th>
+<th>MySQL B+ 树</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>存储</td>
+<td>纯内存</td>
+<td>磁盘 + 内存（Buffer Pool）</td>
+</tr>
+<tr>
+<td>节点连接</td>
+<td>多层指针 + 链表</td>
+<td>页内指针 + 叶子链表</td>
+</tr>
+<tr>
+<td>扇出</td>
+<td>较小（~32）</td>
+<td>很大（一页 16KB，数百 key）</td>
+</tr>
+<tr>
+<td>范围查询</td>
+<td>底层链表遍历</td>
+<td>叶子链表遍历</td>
+</tr>
+<tr>
+<td>实现复杂度</td>
+<td>简单</td>
+<td>复杂（页分裂/合并）</td>
+</tr>
+<tr>
+<td>并发</td>
+<td>单线程无锁</td>
+<td>需 latch/B+ 树锁</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为什么 Redis 用跳表</strong>： - 内存操作，树高不是瓶颈 -
+实现简单，范围查询 O(logN)+O(k) - ZSet 还需支持 rank（排名），跳表按
+span 字段可 O(logN) 求排名</p>
+<p><strong>为什么 MySQL 用 B+ 树</strong>： - 磁盘 IO 是瓶颈，需要
+<strong>高扇出</strong> 降低树高 - 非叶子节点不存数据，一页存更多
+key，减少 IO 次数</p>
+<hr />
+<h2 id="压缩列表与连锁更新">10. 压缩列表与连锁更新</h2>
+<h3
+id="问什么是压缩列表ziplist有什么问题">问：什么是压缩列表（ziplist）？有什么问题？</h3>
+<p><strong>答：</strong> 紧凑连续内存，存储小 Hash/List/ZSet： - 每个
+entry 存 prevlen + encoding + data -
+节省内存，适合元素少、值小的场景</p>
+<p><strong>阈值</strong>（Redis 7.x 前）： - Hash：元素 ≤ 512 且值 ≤ 64
+字节 - ZSet：元素 ≤ 128 且值 ≤ 64 字节</p>
+<p><strong>升级</strong>：Redis 7.0 用 listpack 替代
+ziplist，解决连锁更新。</p>
+<hr />
+<h3 id="问什么是连锁更新cascade-update">问：什么是连锁更新（Cascade
+Update）？</h3>
+<p><strong>答：</strong> ziplist 中每个 entry 的
+<strong>prevlen</strong> 记录前一个 entry 长度： - 前 entry &lt; 254
+字节：prevlen 占 1 字节 - 前 entry ≥ 254 字节：prevlen 占 5 字节</p>
+<p><strong>连锁</strong>：插入/删除导致某 entry 长度变化 → 后续 entry 的
+prevlen 需扩展/收缩 → 可能引发后续连锁。</p>
+<p><strong>最坏</strong>：O(n²) 复杂度，如大量连续 250~253 字节的
+entry，一个插入触发全部更新。</p>
+<p><strong>解决</strong>：listpack 改为 <strong>backlen</strong>
+变长编码，只记录自身长度，不依赖前 entry。</p>
+<hr />
+<h2 id="渐进式-rehash">11. 渐进式 rehash</h2>
+<h3 id="问redis-哈希表扩容的渐进式-rehash-过程">问：Redis
+哈希表扩容的渐进式 rehash 过程？</h3>
+<p><strong>答：</strong> Redis 字典（dict）有两个哈希表
+ht[0]、ht[1]：</p>
+<p><strong>触发扩容</strong>：负载因子 ≥ 1（used/size）或 正在进行
+BGSAVE 且 ≥ 5。</p>
+<p><strong>过程</strong>： 1. 为 ht[1] 分配 2 倍大小空间 2. 设置
+<strong>rehashidx = 0</strong>，标记 rehash 开始 3. <strong>渐进
+rehash</strong>：每次 CRUD 命令时，顺带迁移 ht[0] 中 rehashidx
+指向的桶到 ht[1] 4. 同时 <strong>定时任务</strong> 也帮忙迁移 5. ht[0]
+全部迁移完 → ht[1] 变为 ht[0]，ht[1] 置 NULL</p>
+<p><strong>优点</strong>：避免一次性 rehash 阻塞 Redis（O(n)
+停顿）。</p>
+<p><strong>缩容</strong>：负载因子 &lt; 0.1 时缩到最小适用 size。</p>
+<hr />
+<h2 id="大-key-与热-key">12. 大 Key 与热 Key</h2>
+<h3 id="问什么是大-key-和热-key有什么危害">问：什么是大 Key 和热
+Key？有什么危害？</h3>
+<p><strong>答：</strong> <strong>大 Key</strong>： - String &gt;
+10KB（或业务定义阈值） - Hash/List/Set/ZSet 元素 &gt; 5000</p>
+<p><strong>危害</strong>：阻塞单线程（删除/序列化慢）、内存不均、主从同步延迟、集群迁移卡顿。</p>
+<p><strong>热 Key</strong>： - 某 key QPS
+极高（如明星微博、秒杀商品）</p>
+<p><strong>危害</strong>：单节点 CPU 飙高、带宽打满、缓存击穿。</p>
+<hr />
+<h3 id="问大-key-和热-key-如何解决">问：大 Key 和热 Key 如何解决？</h3>
+<p><strong>答：</strong> <strong>大 Key</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>拆分</td>
+<td>大 Hash 拆为 <code>key:1</code>、<code>key:2</code></td>
+</tr>
+<tr>
+<td>压缩</td>
+<td>存 gzip 压缩后的值</td>
+</tr>
+<tr>
+<td>异步删除</td>
+<td>Redis 4.0+ <code>UNLINK</code> 非阻塞删除</td>
+</tr>
+<tr>
+<td>定期扫描</td>
+<td><code>redis-cli --bigkeys</code> 发现</td>
+</tr>
+</tbody>
+</table>
+<p><strong>热 Key</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本地缓存</td>
+<td>JVM 一级缓存（Caffeine）</td>
+</tr>
+<tr>
+<td>多副本</td>
+<td>热 key 加随机后缀 <code>key:{1~N}</code>，分散到不同 slot</td>
+</tr>
+<tr>
+<td>读写分离</td>
+<td>从库分担读</td>
+</tr>
+<tr>
+<td>监控</td>
+<td>Redis 4.0+ <code>redis-cli --hotkeys</code>（需 LFU 策略）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="缓存一致性">13. 缓存一致性</h2>
+<h3 id="问cache-aside-模式是什么有哪些一致性问题">问：Cache Aside
+模式是什么？有哪些一致性问题？</h3>
+<p><strong>答：</strong> <strong>读</strong>：先读缓存 → miss 则读 DB →
+写缓存 <strong>写</strong>：先更新 DB → <strong>删除</strong>
+缓存（而非更新）</p>
+<p><strong>为什么删缓存而非更新</strong>：避免并发写导致缓存与 DB
+不一致；删缓存 lazy load 更简单。</p>
+<p><strong>不一致窗口</strong>：删缓存前，其他线程可能读到旧缓存。解决：
+1. 延迟双删：删 → 更新 DB → sleep → 再删 2. 消息队列异步删缓存 3. Canal
+监听 binlog</p>
+<hr />
+<h3 id="问canal-mq-如何保证缓存一致性">问：Canal + MQ
+如何保证缓存一致性？</h3>
+<p><strong>答：</strong></p>
+<pre><code>MySQL 更新 → binlog → Canal 监听 → 发 MQ → 消费者删 Redis 缓存</code></pre>
+<p><strong>流程</strong>： 1. 业务更新
+DB，<strong>不直接操作缓存</strong> 2. Canal 伪装成 MySQL slave，接收
+binlog 3. 解析 binlog，获取变更的表和主键 4. 发送 MQ 消息 5. 消费者根据
+key 规则 <strong>删除</strong> Redis 对应缓存</p>
+<p><strong>优点</strong>：解耦、最终一致、DB 为准。
+<strong>注意</strong>：MQ 消费失败需重试；删缓存幂等。</p>
+<hr />
+<h2 id="布隆过滤器">14. 布隆过滤器</h2>
+<h3 id="问布隆过滤器原理和应用场景">问：布隆过滤器原理和应用场景？</h3>
+<p><strong>答：</strong> <strong>原理</strong>：bit 数组 + 多个 hash
+函数。添加元素时，各 hash 位置置 1；查询时全为 1 则
+<strong>可能存在</strong>，有 0 则 <strong>一定不存在</strong>。</p>
+<p><strong>特点</strong>： - 有误判率（不存在误判为存在），无漏判 -
+空间效率极高 - 不支持删除（Counting Bloom Filter 可以）</p>
+<p><strong>Redis
+实现</strong>：<code>BF.ADD</code>、<code>BF.EXISTS</code>（RedisBloom
+模块）。</p>
+<p><strong>场景</strong>： - <strong>防缓存穿透</strong>：查 Redis
+前先过布隆，不存在直接返回 - 爬虫 URL 去重 - 垃圾邮件过滤</p>
+<p><strong>参数</strong>：预期元素数 n、误判率 p，可计算最优 bit
+数组大小 m 和 hash 函数个数 k。</p>
+<hr />
+<h2 id="秒杀设计">15. 秒杀设计</h2>
+<h3 id="问如何用-redis-设计秒杀系统">问：如何用 Redis
+设计秒杀系统？</h3>
+<p><strong>答：</strong>
+<strong>核心挑战</strong>：高并发读、瞬间大写、超卖、DB 压力。</p>
+<p><strong>架构</strong>：</p>
+<pre><code>1. 前端：按钮置灰、验证码/答题防刷
+2. 接入层：Nginx 限流、网关熔断
+3. Redis 层：
+   - 预热：秒杀开始前将库存写入 Redis（DECR 原子扣减）
+   - 校验：Lua 脚本原子「判断库存 → 扣减 → 记录用户」
+   - 去重：Set 记录已购买用户，防止重复
+4. 异步：扣减成功后发 MQ，消费者异步创建订单、写 DB
+5. 兜底：DB 最终库存校验，超卖回滚</code></pre>
+<p><strong>Lua 脚本示例</strong>：</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="fu">tonumber</span><span class="op">(</span><span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;get&#39;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">1</span><span class="op">]))</span> <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">then</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;sismember&#39;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">2</span><span class="op">],</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span> <span class="op">==</span> <span class="dv">0</span> <span class="cf">then</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;decr&#39;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;sadd&#39;</span><span class="op">,</span> <span class="cn">KEYS</span><span class="op">[</span><span class="dv">2</span><span class="op">],</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="dv">1</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="dv">0</span></span></code></pre></div>
+<p><strong>其他</strong>： - 分段库存：<code>stock:{0~9}</code> 分散热点
+- 逻辑过期：商品数据不过期，异步更新 - 熔断：Redis/DB 异常时快速失败</p>
+<hr />
+<h2 id="其他深入">16. 其他深入</h2>
+<h3 id="问redis-单线程为什么还这么快6.0-多线程影响什么">问：Redis
+单线程为什么还这么快？6.0 多线程影响什么？</h3>
+<p><strong>答：</strong> 瓶颈不在 CPU 计算，而在
+<strong>内存访问</strong> 和 <strong>网络
+IO</strong>。单线程避免锁竞争和上下文切换。</p>
+<p>6.0 多线程只并行 <strong>网络读写</strong>（read/write query
+buffer），<strong>命令执行仍单线程</strong>，保证原子性不变。</p>
+<hr />
+<h3 id="问redis-持久化时-fork-会有什么问题">问：Redis 持久化时 fork
+会有什么问题？</h3>
+<p><strong>答：</strong> fork 使用 copy-on-write： - 子进程做 RDB/AOF
+重写 - 主进程继续处理写请求，修改的页才复制</p>
+<p><strong>问题</strong>： - 数据量大时 fork 耗时（可能阻塞 ms~s 级） -
+写密集时 COW 复制页多，内存翻倍风险</p>
+<p><strong>优化</strong>：<code>echo never &gt; /sys/kernel/mm/transparent_hugepage/enabled</code>
+避免大页复制；控制单实例内存 ≤ 10GB。</p>
+<hr />
+<h2 id="图解加深">图解加深</h2>
+<h3 id="跳表结构">1. 跳表结构</h3>
+<p>理解要点：多层索引 + 底层有序链表，查找从顶层开始「跳跃」，ZSet 的
+score 排序靠此实现。</p>
+<h3 id="渐进式-rehash-1">2. 渐进式 rehash</h3>
+<p>两个哈希表并存，rehashidx
+逐步推进，读写同时服务，避免一次性迁移卡顿。</p>
+<h3 id="缓存一致性-1">3. 缓存一致性</h3>
+<p>推荐 Cache Aside + Canal 删缓存，DB 为准，最终一致。</p>
+<hr />
+<h2 id="大厂追问">大厂追问</h2>
+<h3 id="redis-和-memcached-区别">1. Redis 和 Memcached 区别？</h3>
+<p>Redis 丰富数据结构、持久化、主从、集群；Memcached 纯
+KV、多线程、内存利用率略高。Redis 功能全面，业界主流。</p>
+<h3 id="分布式锁-redlock-争议">2. 分布式锁 Redlock 争议？</h3>
+<p>Redis 作者 Antirez 提出 Redlock（多 Master 过半成功）。Martin
+Kleppmann 质疑时钟漂移和 GC 暂停可能导致不安全。生产环境 Redisson
+单节点+看门狗 或 ZooKeeper/Etcd 更可靠。</p>
+<h3 id="加锁后业务执行超过-ttl-怎么办">10. 加锁后业务执行超过 TTL
+怎么办？</h3>
+<p>Redisson Watchdog 自动续期；或手动评估业务 P99 设 TTL +
+业务内校验；绝不用无限期锁。</p>
+<h3 id="setnx-expire-两步为什么不行">11. SETNX + EXPIRE
+两步为什么不行？</h3>
+<p>两步非原子，SETNX 成功后进程崩溃，锁永不过期 → 死锁。必须
+<code>SET key value NX EX</code>。</p>
+<h3 id="主从架构下-redis-锁安全吗">12. 主从架构下 Redis 锁安全吗？</h3>
+<p>主库加锁后宕机，从库未同步则锁丢失，新主无锁记录 → 双写。高要求场景用
+RedLock 或 ZK。</p>
+<h3 id="为什么-cluster-是-16384-个槽">3. 为什么 Cluster 是 16384
+个槽？</h3>
+<p>CRC16 结果 16 bit，取模 16384。节点间心跳包携带槽信息，16384 位约
+2KB，太大则心跳负担重。16384 对千级节点足够。</p>
+<h3 id="redis-内存淘汰-lru-和-lfu-区别">4. Redis 内存淘汰 LRU 和 LFU
+区别？</h3>
+<p>LRU：淘汰最久未访问。LFU：淘汰访问频率最低。LFU
+更适合热点明显的场景（如秒杀），Redis 4.0+ 推荐 LFU。</p>
+<h3 id="如何保证-redis-和-db-双写一致">5. 如何保证 Redis 和 DB
+双写一致？</h3>
+<p>强一致很难。推荐：<strong>先更新 DB，再删缓存</strong> + Canal 异步删
++ 重试；或读写都走 DB，缓存只做加速，容忍短暂不一致。</p>
+<h3 id="渐进式-rehash-期间读请求怎么处理">6. 渐进式 rehash
+期间读请求怎么处理？</h3>
+<p>同时查 ht[0] 和 ht[1]：若 key 在 ht[0] 且 rehashidx 未迁移，从 ht[0]
+读；已迁移则从 ht[1] 读。写操作顺带迁移桶。</p>
+<h3 id="aof-重写期间新命令会丢吗">7. AOF 重写期间新命令会丢吗？</h3>
+<p>不会。重写期间新写命令进 <strong>AOF
+重写缓冲区</strong>，子进程完成后追加到 new AOF 再替换。</p>
+<h3 id="redis-单节点-mysql-单节点大概多少-qps">8. Redis 单节点 + MySQL
+单节点大概多少 QPS？</h3>
+<p>视业务而定：Redis 读 10 万+ QPS；MySQL 简单查询数千 QPS。瓶颈通常在
+DB，Redis 做缓存可大幅提升整体吞吐。</p>
+<h3 id="缓存击穿逻辑过期方案是什么">9.
+缓存击穿「逻辑过期」方案是什么？</h3>
+<p>热点 key 不设 TTL，value 内嵌逻辑过期时间；发现过期时
+<strong>互斥锁</strong> 只让一个线程查 DB
+重建，其他线程返回旧值，避免同时打 DB。</p>

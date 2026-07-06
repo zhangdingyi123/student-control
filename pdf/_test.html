@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Java基础</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Java基础</h1>
+</header>
+<h1 id="java-基础面试题">Java 基础面试题</h1>
+<hr />
+<h2 id="概念篇">1. 概念篇</h2>
+<h3 id="问说一下-java-的特点">问：说一下 Java 的特点？</h3>
+<p><strong>答：</strong> -
+<strong>平台无关性</strong>：源码编译为字节码，由 JVM
+在各平台翻译执行，实现「一次编写，到处运行」 -
+<strong>面向对象</strong>：封装、继承、多态，代码易维护和复用 -
+<strong>自动内存管理</strong>：GC 自动回收无用对象，减少内存泄漏</p>
+<hr />
+<h3 id="问java-为什么是跨平台的">问：Java 为什么是跨平台的？</h3>
+<p><strong>答：</strong> Java 源码经 <code>javac</code> 编译为
+<code>.class</code> 字节码，再由各平台的 JVM 翻译成机器码执行。</p>
+<ul>
+<li>跨平台的是 <strong>Java 程序（字节码）</strong>，不是 JVM 本身</li>
+<li>JVM 用 C/C++ 编写，是平台相关的，不同系统需安装对应版本 JVM</li>
+<li>字节码在各平台相同，JVM 负责适配底层差异</li>
+</ul>
+<hr />
+<h3 id="问jvmjdkjre-三者关系">问：JVM、JDK、JRE 三者关系？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>JVM</strong></td>
+<td>Java 虚拟机，执行字节码，提供内存管理、GC</td>
+</tr>
+<tr>
+<td><strong>JRE</strong></td>
+<td>运行环境 = JVM + 核心类库，不含开发工具</td>
+</tr>
+<tr>
+<td><strong>JDK</strong></td>
+<td>开发工具包 = JRE + javac、jdb 等开发工具</td>
+</tr>
+</tbody>
+</table>
+<p>关系：<strong>JDK ⊃ JRE ⊃ JVM</strong></p>
+<hr />
+<h3 id="问为什么-java-既有编译又有解释">问：为什么 Java
+既有编译又有解释？</h3>
+<p><strong>答：</strong> 1.
+<strong>编译阶段</strong>：<code>javac</code>
+将源码编译为字节码（平台无关） 2. <strong>运行阶段</strong>：JVM
+解释器逐条执行字节码；同时 JIT 将热点代码编译为本地机器码缓存</p>
+<p>因此 Java 是 <strong>编译 + 解释混合</strong>
+模式，兼顾跨平台与执行效率。</p>
+<p><strong>JIT 热点识别</strong>：JVM
+通过方法调用计数器和回边计数器识别热点代码，达到阈值后编译为本地机器码缓存到
+Code Cache，后续直接执行机器码。</p>
+<hr />
+<h3 id="问jvm-和-java-有什么区别">问：JVM 和 Java 有什么区别？</h3>
+<p><strong>答：</strong> -
+<strong>Java</strong>：编程语言，提供语法、关键字、标准类库（String、List
+等） -
+<strong>JVM</strong>：运行平台，负责加载字节码、翻译为机器码、内存管理与
+GC</p>
+<p>关系：<strong>JDK ⊃ JRE ⊃ JVM</strong>。跨平台能力由 JVM
+提供，字节码可在 Windows/Linux/Mac 的 JVM 上运行。</p>
+<p><strong>补充</strong>：JVM 不只跑 Java，Kotlin、Scala
+等编译后也是字节码，可在 JVM 上运行。</p>
+<hr />
+<h3 id="问java-的优势和劣势">问：Java 的优势和劣势？</h3>
+<p><strong>答：</strong> <strong>优势</strong>： - 跨平台（JVM） -
+面向对象，生态成熟（Spring、MyBatis 等） - 自动 GC，内置多线程支持 -
+企业级稳定性，向后兼容好 - 安全模型（沙箱机制）</p>
+<p><strong>劣势</strong>： - 性能不如 C++/Rust（JVM 有额外开销，启动慢）
+- 语法相对繁琐（样板代码多） - JVM 本身占内存 - 开发效率不如 Python
+等动态语言</p>
+<hr />
+<h3
+id="问编译型语言和解释型语言的区别">问：编译型语言和解释型语言的区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>特点</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>编译型</td>
+<td>先整体编译为机器码/字节码再执行，速度快</td>
+<td>C、C++</td>
+</tr>
+<tr>
+<td>解释型</td>
+<td>运行时逐行解释执行，跨平台好、速度较慢</td>
+<td>Python、JavaScript</td>
+</tr>
+<tr>
+<td>混合型</td>
+<td>先编译为字节码，再解释 + JIT</td>
+<td><strong>Java</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Java 严格说是 <strong>编译 + 解释混合</strong>：<code>javac</code>
+编译为 <code>.class</code>，JVM 解释执行 + JIT 编译热点代码。</p>
+<hr />
+<h3 id="问java-是值传递还是引用传递">问：Java
+是值传递还是引用传递？</h3>
+<p><strong>答：Java 只有值传递。</strong></p>
+<ul>
+<li><strong>基本类型</strong>：传递值的副本，方法内修改不影响原变量</li>
+<li><strong>引用类型</strong>：传递引用的副本（地址副本），可通过副本修改对象内容，但无法改变原引用的指向</li>
+</ul>
+<hr />
+<h2 id="数据类型篇">2. 数据类型篇</h2>
+<h3 id="问八种基本数据类型是什么">问：八种基本数据类型是什么？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>字节</th>
+<th>默认值</th>
+<th>包装类</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>byte</td>
+<td>1</td>
+<td>0</td>
+<td>Byte</td>
+</tr>
+<tr>
+<td>short</td>
+<td>2</td>
+<td>0</td>
+<td>Short</td>
+</tr>
+<tr>
+<td>int</td>
+<td>4</td>
+<td>0</td>
+<td>Integer</td>
+</tr>
+<tr>
+<td>long</td>
+<td>8</td>
+<td>0L</td>
+<td>Long</td>
+</tr>
+<tr>
+<td>float</td>
+<td>4</td>
+<td>0.0f</td>
+<td>Float</td>
+</tr>
+<tr>
+<td>double</td>
+<td>8</td>
+<td>0.0d</td>
+<td>Double</td>
+</tr>
+<tr>
+<td>char</td>
+<td>2</td>
+<td>‘000’</td>
+<td>Character</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td>-</td>
+<td>false</td>
+<td>Boolean</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问int-和-integer-的区别integer-缓存机制">问：int 和 Integer
+的区别？Integer 缓存机制？</h3>
+<p><strong>答：</strong> - <code>int</code>
+是基本类型，存栈上（局部变量），默认值 0 - <code>Integer</code>
+是包装类，是对象，可为 null</p>
+<p><strong>装箱/拆箱</strong>：自动装箱调用
+<code>Integer.valueOf()</code>，拆箱调用 <code>intValue()</code></p>
+<p><strong>缓存机制</strong>：<code>Integer.valueOf()</code> 对
+<strong>-128 ~ 127</strong> 之间的值会复用缓存对象。在此范围内
+<code>==</code> 可能为 true，超出范围比较的是对象地址。</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">Integer</span> a <span class="op">=</span> <span class="dv">127</span><span class="op">,</span> b <span class="op">=</span> <span class="dv">127</span><span class="op">;</span>  <span class="co">// a == b → true</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Integer</span> c <span class="op">=</span> <span class="dv">128</span><span class="op">,</span> d <span class="op">=</span> <span class="dv">128</span><span class="op">;</span>  <span class="co">// c == d → false</span></span></code></pre></div>
+<p><strong>为什么有包装类</strong>：泛型只能使用引用类型；集合框架需要对象；提供工具方法（如
+<code>Integer.parseInt()</code>）。</p>
+<p><strong>为什么保留
+int</strong>：性能更好（栈上分配、无装箱开销）；语义清晰（不可为 null
+的数值计算）。</p>
+<hr />
+<h3
+id="问装箱和拆箱是什么有什么坑">问：装箱和拆箱是什么？有什么坑？</h3>
+<p><strong>答：</strong> - <strong>装箱（Autoboxing）</strong>：基本类型
+→ 包装类，如 <code>Integer i = 10</code>，实际调用
+<code>Integer.valueOf(10)</code> -
+<strong>拆箱（Unboxing）</strong>：包装类 → 基本类型，如
+<code>int n = i</code>，实际调用 <code>i.intValue()</code></p>
+<p><strong>常见坑</strong>： 1.
+<strong>NPE</strong>：<code>Integer i = null; int n = i;</code> → 拆箱时
+NPE 2. <strong>性能</strong>：循环中频繁装箱/拆箱（如
+<code>List&lt;Integer&gt;</code> 累加）产生大量临时对象 3. <strong>==
+比较</strong>：超出缓存范围时 <code>==</code> 比较的是地址，应用
+<code>equals</code> 4.
+<strong>三目运算符</strong>：<code>true ? new Integer(1) : 2.0</code>
+会拆箱为 double，可能 NPE</p>
+<hr />
+<h3
+id="问数据类型转换方式有哪些会有什么问题">问：数据类型转换方式有哪些？会有什么问题？</h3>
+<p><strong>答：</strong> | 转换方式 | 说明 | 示例 | |———-|——|——| |
+自动转换（隐式） | 小范围 → 大范围，安全 | <code>int</code> →
+<code>long</code> | | 强制转换（显式） | 大范围 → 小范围，可能丢失 |
+<code>(int) 3.14</code> → 3 | | 字符串转换 |
+<code>Integer.parseInt()</code>、<code>Double.parseDouble()</code> |
+<code>"123"</code> → 123 | | 向上转型 | 子类 → 父类，自动、安全 |
+<code>Dog</code> → <code>Animal</code> | | 向下转型 | 父类 → 子类，需
+<code>instanceof</code> 检查 | 否则 <code>ClassCastException</code>
+|</p>
+<p><strong>风险</strong>： -
+<strong>数据溢出</strong>：<code>byte b = (byte) 300;</code> →
+44（截断高位） - <strong>精度损失</strong>：<code>(int) 3.14</code> → 3
+-
+<strong>ClassCastException</strong>：<code>Animal a = new Animal(); Dog d = (Dog) a;</code></p>
+<hr />
+<h3 id="问为什么用-bigdecimal-不用-double">问：为什么用 BigDecimal 不用
+double？</h3>
+<p><strong>答：</strong> <code>float</code>/<code>double</code> 采用
+IEEE 754 浮点标准，二进制无法精确表示部分十进制小数（如
+0.1），存在精度丢失。金融计算应使用 <code>BigDecimal</code>，通过
+<code>String</code> 构造避免精度问题。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 错误：double 构造仍有精度问题</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">BigDecimal</span> a <span class="op">=</span> <span class="kw">new</span> <span class="bu">BigDecimal</span><span class="op">(</span><span class="fl">0.1</span><span class="op">);</span>  <span class="co">// 实际 0.100000000000000005551115...</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">// 正确</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="bu">BigDecimal</span> b <span class="op">=</span> <span class="kw">new</span> <span class="bu">BigDecimal</span><span class="op">(</span><span class="st">&quot;0.1&quot;</span><span class="op">);</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">BigDecimal</span> sum <span class="op">=</span> b<span class="op">.</span><span class="fu">add</span><span class="op">(</span><span class="kw">new</span> <span class="bu">BigDecimal</span><span class="op">(</span><span class="st">&quot;0.2&quot;</span><span class="op">));</span>  <span class="co">// 0.3</span></span></code></pre></div>
+<p><strong>运算注意</strong>：使用
+<code>add</code>、<code>subtract</code>、<code>multiply</code>、<code>divide</code>
+方法；除法需指定精度和舍入模式 <code>RoundingMode.HALF_UP</code>。</p>
+<hr />
+<h2 id="面向对象篇">3. 面向对象篇</h2>
+<h3 id="问封装继承多态怎么理解">问：封装、继承、多态怎么理解？</h3>
+<p><strong>答：</strong> - <strong>封装</strong>：隐藏内部实现，通过
+public 方法暴露接口 -
+<strong>继承</strong>：子类复用父类属性和方法，<code>extends</code>
+单继承 -
+<strong>多态</strong>：同一引用调用同一方法，不同子类表现不同行为 -
+编译看左边（引用类型），运行看右边（实际对象） -
+体现：方法重写、接口实现、方法重载</p>
+<hr />
+<h3 id="问多态体现在哪几个方面">问：多态体现在哪几个方面？</h3>
+<p><strong>答：</strong> 1.
+<strong>方法重载（编译期多态）</strong>：同类中同名不同参，编译器根据参数决定调用哪个
+2. <strong>方法重写（运行期多态）</strong>：子类覆盖父类方法，JVM
+根据实际对象类型调用 3.
+<strong>接口多态</strong>：多个类实现同一接口，用接口引用调用，表现不同实现
+4. <strong>向上/向下转型</strong>：父类引用指向子类对象；向下转型需
+<code>instanceof</code> 检查</p>
+<hr />
+<h3 id="问多态解决了什么问题">问：多态解决了什么问题？</h3>
+<p><strong>答：</strong> -
+<strong>扩展性</strong>：新增子类无需修改调用方代码（开闭原则） -
+<strong>复用性</strong>：父类/接口定义统一 API，子类提供不同实现 -
+<strong>解耦</strong>：面向接口编程，降低模块依赖</p>
+<p><strong>典型应用</strong>：策略模式、模板方法、依赖倒置、消除冗长
+if-else、Spring 中接口注入不同实现。</p>
+<hr />
+<h3 id="问面向对象的设计原则有哪些">问：面向对象的设计原则有哪些？</h3>
+<p><strong>答：</strong> | 原则 | 含义 | |——|——| |
+<strong>单一职责（SRP）</strong> | 一个类只负责一项职责 | |
+<strong>开闭原则（OCP）</strong> | 对扩展开放，对修改封闭 | |
+<strong>里氏替换（LSP）</strong> | 子类可替换父类，不改变程序行为 | |
+<strong>接口隔离（ISP）</strong> | 接口小而专，不强迫依赖不需要的方法 |
+| <strong>依赖倒置（DIP）</strong> | 高层不依赖低层，都依赖抽象 | |
+<strong>迪米特法则</strong> | 只与直接朋友交互，减少耦合 |</p>
+<hr />
+<h3 id="问重载和重写的区别">问：重载和重写的区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>重载（Overload）</th>
+<th>重写（Override）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>位置</td>
+<td>同类中</td>
+<td>子类与父类/接口</td>
+</tr>
+<tr>
+<td>方法名</td>
+<td>相同</td>
+<td>相同</td>
+</tr>
+<tr>
+<td>参数列表</td>
+<td>必须不同</td>
+<td>必须相同</td>
+</tr>
+<tr>
+<td>返回类型</td>
+<td>可不同</td>
+<td>相同或子类（协变）</td>
+</tr>
+<tr>
+<td>访问权限</td>
+<td>无限制</td>
+<td>不能更严格</td>
+</tr>
+<tr>
+<td>绑定</td>
+<td>编译期</td>
+<td>运行期</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问抽象类和接口的区别">问：抽象类和接口的区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>抽象类</th>
+<th>接口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>关键字</td>
+<td>abstract class</td>
+<td>interface</td>
+</tr>
+<tr>
+<td>构造方法</td>
+<td>可以有</td>
+<td>不能有</td>
+</tr>
+<tr>
+<td>成员变量</td>
+<td>任意修饰符</td>
+<td>public static final</td>
+</tr>
+<tr>
+<td>方法</td>
+<td>抽象 + 普通方法</td>
+<td>抽象（JDK8前）/ default / static</td>
+</tr>
+<tr>
+<td>继承</td>
+<td>单继承</td>
+<td>多实现</td>
+</tr>
+<tr>
+<td>设计思想</td>
+<td>is-a 关系</td>
+<td>has-a / can-do 能力</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问抽象类和普通类的区别">问：抽象类和普通类的区别？</h3>
+<p><strong>答：</strong> | 对比 | 普通类 | 抽象类 | |——|——–|——–| |
+实例化 | 可直接 new | 不能直接 new | | 方法 | 可有具体实现 |
+可有抽象方法 + 具体方法 | | 构造器 | 有 | 有（供子类调用） | | 用途 |
+完整类 | 作为基类被继承 |</p>
+<hr />
+<h3 id="问抽象类能被实例化吗能加-final-吗">问：抽象类能被实例化吗？能加
+final 吗？</h3>
+<p><strong>答：</strong> - <strong>不能实例化</strong>：不能用
+<code>new AbstractClass()</code>，但子类实例化时会调用抽象类构造器 -
+<strong>不能加 final</strong>：抽象类必须被继承，final
+禁止继承，两者互斥</p>
+<hr />
+<h3 id="问接口里可以定义哪些方法">问：接口里可以定义哪些方法？</h3>
+<p><strong>答：</strong> | 类型 | JDK 版本 | 说明 | |——|———-|——| |
+抽象方法 | 1.0+ | 默认 public abstract，实现类必须实现 | | default 方法
+| 8+ | 带方法体，实现类可重写 | | static 方法 | 8+ |
+属于接口本身，接口名直接调用 | | private 方法 | 9+ | 辅助 default
+方法，实现类不可见 | | 常量 | 1.0+ | public static final，必须赋初值
+|</p>
+<p><strong>接口不能有构造方法</strong>。</p>
+<hr />
+<h2 id="string-与-object-篇">4. String 与 Object 篇</h2>
+<h3 id="问string-为什么不可变">问：String 为什么不可变？</h3>
+<p><strong>答：</strong> 1. <code>final</code> 修饰类，内部
+<code>char[]</code>/<code>byte[]</code> 也被 final 修饰 2.
+字符串常量池复用，不可变保证安全 3. 作为 HashMap 的 key，hash 值不变 4.
+天然线程安全</p>
+<p>任何「修改」都会创建新 String 对象。</p>
+<hr />
+<h3 id="问string-常量池是什么intern-的作用">问：String
+常量池是什么？intern() 的作用？</h3>
+<p><strong>答：</strong> <strong>字符串常量池</strong>（String
+Pool）位于堆中（JDK 7+ 从方法区移入堆），存储字面量和 intern
+后的字符串，实现复用。</p>
+<table>
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th>创建方式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>String s = "abc"</code></td>
+<td>常量池查找/创建，直接引用</td>
+</tr>
+<tr>
+<td><code>new String("abc")</code></td>
+<td>堆中新建对象；若常量池无 “abc” 则同时创建常量池对象</td>
+</tr>
+<tr>
+<td><code>s.intern()</code></td>
+<td>将堆中字符串引用放入常量池，返回常量池引用</td>
+</tr>
+</tbody>
+</table>
+<p><strong>经典题</strong>：<code>new String("abc")</code>
+创建几个对象？ - 常量池无 “abc”：<strong>2 个</strong>（堆对象 +
+常量池对象） - 常量池已有 “abc”：<strong>1 个</strong>（仅堆对象）</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> a <span class="op">=</span> <span class="st">&quot;hello&quot;</span><span class="op">,</span> b <span class="op">=</span> <span class="st">&quot;hello&quot;</span><span class="op">;</span>  <span class="co">// a == b → true（同一常量池对象）</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> c <span class="op">=</span> <span class="kw">new</span> <span class="bu">String</span><span class="op">(</span><span class="st">&quot;hello&quot;</span><span class="op">),</span> d <span class="op">=</span> <span class="kw">new</span> <span class="bu">String</span><span class="op">(</span><span class="st">&quot;hello&quot;</span><span class="op">);</span>  <span class="co">// c == d → false</span></span></code></pre></div>
+<p><strong>JDK 9+ 优化</strong>：String 底层由 <code>char[]</code> 改为
+<code>byte[]</code> + 编码标志（Compact Strings），Latin-1 字符占 1
+字节。</p>
+<hr />
+<h3
+id="问stringstringbufferstringbuilder-区别">问：String、StringBuffer、StringBuilder
+区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>可变性</th>
+<th>线程安全</th>
+<th>性能</th>
+<th>场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>String</td>
+<td>不可变</td>
+<td>安全</td>
+<td>-</td>
+<td>少量字符串</td>
+</tr>
+<tr>
+<td>StringBuffer</td>
+<td>可变</td>
+<td>安全（synchronized）</td>
+<td>较低</td>
+<td>多线程拼接</td>
+</tr>
+<tr>
+<td>StringBuilder</td>
+<td>可变</td>
+<td>不安全</td>
+<td>最高</td>
+<td>单线程拼接</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="问equals-和-hashcode-的关系为什么要一起重写">问：equals 和
+hashCode 的关系？为什么要一起重写？</h3>
+<p><strong>答：</strong> <strong>规则</strong>：<code>equals</code> 相等
+→ <code>hashCode</code> 必须相等；<code>hashCode</code> 相等 →
+<code>equals</code> 不一定相等。</p>
+<p><strong>原因</strong>：HashMap/HashSet 先用 hashCode 定位桶，再用
+equals 比较。只重写 equals 会导致相同对象落入不同桶，破坏集合语义。</p>
+<hr />
+<h3 id="问-和-equals-的区别">问：== 和 equals 的区别？</h3>
+<p><strong>答：</strong> -
+<code>==</code>：基本类型比较值；引用类型比较内存地址 -
+<code>equals</code>：Object 默认等同 <code>==</code>；String
+等类重写后比较内容</p>
+<hr />
+<h3 id="问object-类有哪些核心方法">问：Object 类有哪些核心方法？</h3>
+<p><strong>答：</strong> | 方法 | 作用 | |——|——| |
+<code>equals(Object)</code> | 默认比较地址，常需重写 | |
+<code>hashCode()</code> | 返回哈希码，重写 equals 必须重写 | |
+<code>toString()</code> | 默认 <code>类名@哈希码</code>，常重写便于调试
+| | <code>getClass()</code> | 返回运行时实际 Class，不可重写 | |
+<code>clone()</code> | 浅拷贝，需实现 Cloneable | | <code>wait()</code>
+/ <code>notify()</code> / <code>notifyAll()</code> | 线程协作，需在
+synchronized 中使用 | | <code>finalize()</code> | GC
+前回调，<strong>已废弃</strong>（JDK 9+），不推荐 |</p>
+<hr />
+<h3 id="问java-创建对象有哪些方式">问：Java 创建对象有哪些方式？</h3>
+<p><strong>答：</strong> | 方式 | 是否调用构造器 | 特点 | |——|—————-|——|
+| <code>new</code> | 是 | 最常用，直接明确 | | 反射
+<code>Constructor.newInstance()</code> | 是 | 运行时动态创建，Spring IOC
+核心 | | <code>clone()</code> | 否 | 浅拷贝，需 Cloneable | | 反序列化 |
+否 | 不调用构造器，需 Serializable | | 工厂方法 | 是（方法内） |
+<code>Integer.valueOf()</code>、单例工厂 |</p>
+<p><strong>注意</strong>：<code>Class.newInstance()</code> 已过时，推荐
+<code>getDeclaredConstructor().newInstance()</code>。</p>
+<hr />
+<h2 id="反射注解异常篇">5. 反射、注解、异常篇</h2>
+<h3 id="问什么是反射应用场景">问：什么是反射？应用场景？</h3>
+<p><strong>答：</strong>
+运行时动态获取类的属性、方法、构造器等信息，并能动态创建对象、调用方法。</p>
+<p><strong>应用场景</strong>： - Spring IOC 容器创建 Bean -
+动态代理（AOP） - JDBC 加载驱动 <code>Class.forName()</code> -
+注解解析（<span class="citation"
+data-cites="Autowired">@Autowired</span>、<span class="citation"
+data-cites="RequestMapping">@RequestMapping</span>）</p>
+<hr />
+<h3 id="问java-注解的原理是什么">问：Java 注解的原理是什么？</h3>
+<p><strong>答：</strong> - 注解本质是继承 <code>Annotation</code>
+接口的特殊接口 - 编译后转为 <code>.class</code>
+中的属性表（<code>RuntimeVisibleAnnotations</code> 等） -
+运行时通过反射获取，返回的是
+<strong>动态代理对象</strong>（<code>AnnotationInvocationHandler</code>）
+- 调用注解方法时，从 <code>memberValues</code> Map
+中取值（来源于常量池）</p>
+<p><strong>元注解</strong>： | 元注解 | 作用 | |——–|——| |
+<code>@Target</code> | 指定作用范围（类、方法、字段等） | |
+<code>@Retention</code> | 保留策略：SOURCE / CLASS / RUNTIME | |
+<code>@Documented</code> | 是否出现在 javadoc | |
+<code>@Inherited</code> | 是否被继承 | | <code>@Repeatable</code> |
+是否可重复（Java 8+） |</p>
+<p><strong>保留策略</strong>： -
+<code>SOURCE</code>：仅源码，编译后丢弃（如 <code>@Override</code>） -
+<code>CLASS</code>：保留到 .class，运行时不可见 -
+<code>RUNTIME</code>：运行时可通过反射读取（Spring、MyBatis 注解）</p>
+<hr />
+<h3 id="问java-异常体系">问：Java 异常体系？</h3>
+<p><strong>答：</strong></p>
+<pre><code>Throwable
+├── Error（不可恢复，如 OutOfMemoryError、StackOverflowError）
+└── Exception
+    ├── Checked Exception（编译期检查，必须处理，如 IOException）
+    └── Unchecked Exception（RuntimeException，如 NPE、IllegalArgumentException）</code></pre>
+<hr />
+<h3 id="问throw-和-throws-的区别什么时候不用-throws">问：throw 和 throws
+的区别？什么时候不用 throws？</h3>
+<p><strong>答：</strong> | 对比 | throw | throws | |——|——-|——–| | 位置 |
+方法体内 | 方法签名 | | 作用 | 主动抛出一个异常对象 |
+声明方法可能抛出的异常，交给调用者处理 | | 数量 | 一次抛一个 |
+可声明多个 |</p>
+<p><strong>不用 throws 的情况</strong>： 1. 抛出的是
+<strong>RuntimeException</strong> 或其子类（非受检异常） 2. 在方法内部
+<strong>try-catch 捕获并处理</strong> 了异常</p>
+<hr />
+<h3 id="问try-catch-finally-中-return-执行顺序">问：try-catch-finally 中
+return 执行顺序？</h3>
+<p><strong>答：</strong> <code>finally</code> 一定执行（除非
+<code>System.exit()</code>）。若 <code>finally</code> 中有
+<code>return</code>，会覆盖 <code>try</code>/<code>catch</code>
+中的返回值。</p>
+<p><strong>执行细节</strong>： 1. <code>try</code> 中若
+<code>return</code>，先计算返回值并暂存，再执行 <code>finally</code> 2.
+<code>finally</code> 中若有 <code>return</code>，覆盖 try/catch 的返回值
+3. <code>finally</code> 中修改 try
+中已确定的返回值变量，<strong>不影响</strong>最终返回值（基本类型/不可变对象）</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> <span class="op">{</span> <span class="cf">return</span> <span class="st">&quot;a&quot;</span><span class="op">;</span> <span class="op">}</span> <span class="cf">finally</span> <span class="op">{</span> <span class="cf">return</span> <span class="st">&quot;b&quot;</span><span class="op">;</span> <span class="op">}</span>  <span class="co">// 返回 &quot;b&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="java-8-新特性篇">6. Java 8 新特性篇</h2>
+<h3 id="问java-8-有哪些新特性">问：Java 8 有哪些新特性？</h3>
+<p><strong>答：</strong> 1. <strong>Lambda
+表达式</strong>：<code>(params) -&gt; expression</code> 2.
+<strong>Stream
+API</strong>：函数式数据处理，<code>filter</code>、<code>map</code>、<code>reduce</code>
+3. <strong>Optional</strong>：避免 NPE 4.
+<strong>接口默认方法</strong>：<code>default</code> 关键字 5.
+<strong>新日期
+API</strong>：<code>LocalDateTime</code>、<code>ZonedDateTime</code> 6.
+<strong>方法引用</strong>：<code>类名::方法名</code></p>
+<hr />
+<h3 id="问lambda-表达式是什么使用条件">问：Lambda
+表达式是什么？使用条件？</h3>
+<p><strong>答：</strong> Lambda 是匿名函数的简写，替代匿名内部类。</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 匿名内部类</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Runnable</span> r1 <span class="op">=</span> <span class="kw">new</span> <span class="bu">Runnable</span><span class="op">()</span> <span class="op">{</span> <span class="kw">public</span> <span class="dt">void</span> <span class="fu">run</span><span class="op">()</span> <span class="op">{</span> <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span><span class="st">&quot;hi&quot;</span><span class="op">);</span> <span class="op">}</span> <span class="op">};</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">// Lambda</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="bu">Runnable</span> r2 <span class="op">=</span> <span class="op">()</span> <span class="op">-&gt;</span> <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span><span class="st">&quot;hi&quot;</span><span class="op">);</span></span></code></pre></div>
+<p><strong>使用条件</strong>：目标类型必须是
+<strong>函数式接口</strong>（仅一个抽象方法），可用
+<code>@FunctionalInterface</code> 标记。</p>
+<p><strong>常见函数式接口</strong>：<code>Runnable</code>、<code>Comparator</code>、<code>Consumer&lt;T&gt;</code>、<code>Supplier&lt;T&gt;</code>、<code>Function&lt;T,R&gt;</code>、<code>Predicate&lt;T&gt;</code>。</p>
+<hr />
+<h3 id="问stream-api-常用操作有哪些">问：Stream API
+常用操作有哪些？</h3>
+<p><strong>答：</strong> Stream
+提供声明式数据处理，支持链式调用和并行流。</p>
+<table>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 45%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th>类型</th>
+<th>常用 API</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>中间操作</td>
+<td><code>filter</code>、<code>map</code>、<code>flatMap</code>、<code>distinct</code>、<code>sorted</code>、<code>limit</code></td>
+<td>返回 Stream，可链式</td>
+</tr>
+<tr>
+<td>终端操作</td>
+<td><code>collect</code>、<code>forEach</code>、<code>reduce</code>、<code>count</code>、<code>anyMatch</code></td>
+<td>触发计算，返回结果</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">List</span><span class="op">&lt;</span><span class="bu">String</span><span class="op">&gt;</span> result <span class="op">=</span> list<span class="op">.</span><span class="fu">stream</span><span class="op">()</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">filter</span><span class="op">(</span>s <span class="op">-&gt;</span> s<span class="op">.</span><span class="fu">length</span><span class="op">()</span> <span class="op">&gt;</span> <span class="dv">3</span><span class="op">)</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">map</span><span class="op">(</span><span class="bu">String</span><span class="op">::</span>toUpperCase<span class="op">)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">collect</span><span class="op">(</span>Collectors<span class="op">.</span><span class="fu">toList</span><span class="op">());</span></span></code></pre></div>
+<p><strong>注意</strong>：Stream
+只能使用一次；中间操作是惰性的，终端操作才触发执行。</p>
+<hr />
+<h3 id="问optional-怎么用能解决什么问题">问：Optional
+怎么用？能解决什么问题？</h3>
+<p><strong>答：</strong> Optional 封装可能为 null 的值，避免
+NPE，表达「值可能缺失」的语义。</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>Optional<span class="op">&lt;</span><span class="bu">String</span><span class="op">&gt;</span> opt <span class="op">=</span> Optional<span class="op">.</span><span class="fu">ofNullable</span><span class="op">(</span><span class="fu">getName</span><span class="op">());</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> name <span class="op">=</span> opt<span class="op">.</span><span class="fu">orElse</span><span class="op">(</span><span class="st">&quot;default&quot;</span><span class="op">);</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>opt<span class="op">.</span><span class="fu">ifPresent</span><span class="op">(</span><span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">::</span>println<span class="op">);</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="bu">String</span> upper <span class="op">=</span> opt<span class="op">.</span><span class="fu">map</span><span class="op">(</span><span class="bu">String</span><span class="op">::</span>toUpperCase<span class="op">).</span><span class="fu">orElse</span><span class="op">(</span><span class="st">&quot;UNKNOWN&quot;</span><span class="op">);</span></span></code></pre></div>
+<p><strong>不要用 Optional
+作为</strong>：方法参数、成员变量、集合元素（增加开销和复杂度）。</p>
+<hr />
+<h3 id="问completablefuture-是什么常用-api">问：CompletableFuture
+是什么？常用 API？</h3>
+<p><strong>答：</strong> JDK 8
+异步编程工具，支持非阻塞回调和多任务组合。</p>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Future</th>
+<th>CompletableFuture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>获取结果</td>
+<td><code>get()</code> 阻塞</td>
+<td>回调 <code>thenApply</code> 非阻塞</td>
+</tr>
+<tr>
+<td>链式组合</td>
+<td>不支持</td>
+<td><code>thenCompose</code>、<code>thenApply</code></td>
+</tr>
+<tr>
+<td>多任务</td>
+<td>不支持</td>
+<td><code>allOf</code>、<code>anyOf</code></td>
+</tr>
+<tr>
+<td>异常</td>
+<td>需 try-catch</td>
+<td><code>exceptionally</code>、<code>handle</code></td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>CompletableFuture<span class="op">.</span><span class="fu">supplyAsync</span><span class="op">(()</span> <span class="op">-&gt;</span> <span class="fu">queryDB</span><span class="op">(),</span> executor<span class="op">)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">thenApply</span><span class="op">(</span>data <span class="op">-&gt;</span> <span class="fu">transform</span><span class="op">(</span>data<span class="op">))</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">exceptionally</span><span class="op">(</span>ex <span class="op">-&gt;</span> defaultValue<span class="op">);</span></span></code></pre></div>
+<p><strong>注意</strong>：生产环境应指定自定义线程池，避免默认
+<code>ForkJoinPool.commonPool()</code> 被占满。</p>
+<hr />
+<h3 id="问stream-并行流注意什么">问：Stream 并行流注意什么？</h3>
+<p><strong>答：</strong> - 适合计算密集型、数据量大的场景 -
+共享数据结构需线程安全 - 避免有状态操作 - 默认使用
+<code>ForkJoinPool.commonPool()</code></p>
+<hr />
+<h2 id="深拷贝与浅拷贝">7. 深拷贝与浅拷贝</h2>
+<h3 id="问深拷贝和浅拷贝的区别">问：深拷贝和浅拷贝的区别？</h3>
+<p><strong>答：</strong> -
+<strong>浅拷贝</strong>：只复制对象本身和基本类型字段，引用类型字段仍指向同一对象
+- <strong>深拷贝</strong>：递归复制所有引用对象，完全独立</p>
+<p><strong>实现方式</strong>： | 方式 | 说明 | |——|——| |
+<code>Cloneable</code> + <code>clone()</code> | 默认浅拷贝，深拷贝需递归
+clone 引用字段 | | 序列化/反序列化 | 通过
+ObjectOutputStream/ObjectInputStream，需 Serializable | | 手动递归复制 |
+逐字段复制，最可控 | | 第三方库 | MapStruct、深拷贝工具；Apache
+BeanUtils 多为浅拷贝 |</p>
+<hr />
+<h2 id="泛型">8. 泛型</h2>
+<h3 id="问java-泛型的原理是什么什么是类型擦除">问：Java
+泛型的原理是什么？什么是类型擦除？</h3>
+<p><strong>答：</strong> Java 泛型是
+<strong>编译期语法糖</strong>，编译后泛型信息被擦除，字节码中只保留原始类型（Raw
+Type）。</p>
+<ul>
+<li><code>List&lt;String&gt;</code> 编译后变成
+<code>List</code>，运行时无法获取 <code>String</code> 类型参数</li>
+<li>编译器在编译期做类型检查，保证类型安全</li>
+<li>擦除后可通过反射绕过泛型约束（如向 <code>List&lt;String&gt;</code>
+插入 Integer）</li>
+</ul>
+<p><strong>追问点</strong>：为什么不能
+<code>new T()</code>？因为运行时不知道 T 的具体类型。可通过反射
+<code>clazz.newInstance()</code> 或工厂模式解决。</p>
+<hr />
+<h3 id="问泛型中-extends-t-和-super-t-的区别pecs-原则">问：泛型中
+<code>&lt;? extends T&gt;</code> 和 <code>&lt;? super T&gt;</code>
+的区别？PECS 原则？</h3>
+<p><strong>答：</strong> -
+<strong><code>&lt;? extends T&gt;</code>（上界）</strong>：只能
+<strong>读取</strong>（Producer Extends），不能写入（除 null） -
+<strong><code>&lt;? super T&gt;</code>（下界）</strong>：只能
+<strong>写入</strong> T 及其子类（Consumer Super），读取只能当
+Object</p>
+<p><strong>PECS 原则</strong>：Producer Extends, Consumer Super。 -
+从集合 <strong>读</strong> 数据 → 用 <code>extends</code> - 往集合
+<strong>写</strong> 数据 → 用 <code>super</code></p>
+<p>典型场景：<code>Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src)</code>。</p>
+<hr />
+<h3
+id="问泛型和基本类型能直接用吗如何处理">问：泛型和基本类型能直接用吗？如何处理？</h3>
+<p><strong>答：</strong>
+不能。泛型参数必须是引用类型，基本类型需用包装类（<code>int</code> →
+<code>Integer</code>）。</p>
+<p>自动装箱/拆箱带来性能开销；高并发场景可用
+<strong>特化集合</strong>（如
+<code>TIntArrayList</code>）或原始类型数组替代。</p>
+<hr />
+<h2 id="final-与-static">9. final 与 static</h2>
+<h3 id="问final-关键字可以修饰什么各有什么含义">问：final
+关键字可以修饰什么？各有什么含义？</h3>
+<p><strong>答：</strong> | 修饰对象 | 含义 | |———-|——| | 类 |
+不可被继承（如 String、Integer） | | 方法 | 不可被重写（private/static
+隐式 final） | | 变量 |
+基本类型：值不可变；引用类型：引用不可变，对象内容可变 | | 参数 |
+方法内不可重新赋值 |</p>
+<p><strong>JMM 语义</strong>：final
+字段在构造器完成后对其他线程可见（禁止重排序到构造器完成前），无需
+volatile。</p>
+<hr />
+<h3 id="问static-关键字的作用静态代码块和构造器的执行顺序">问：static
+关键字的作用？静态代码块和构造器的执行顺序？</h3>
+<p><strong>答：</strong> -
+<strong>静态变量</strong>：类级别，所有实例共享，类加载时初始化 -
+<strong>静态方法</strong>：属于类，不能访问实例成员，不能用 this -
+<strong>静态代码块</strong>：类加载时执行一次，用于初始化静态资源</p>
+<p><strong>执行顺序</strong>：父类静态块 → 子类静态块 → 父类构造器 →
+子类构造器 → 实例代码块 → 构造方法体。</p>
+<p><strong>追问点</strong>：静态方法能否被重写？不能，只能被隐藏（Hide）。多态对静态方法无效，编译期绑定。</p>
+<hr />
+<h3 id="问static-和-final-组合使用有什么场景">问：static 和 final
+组合使用有什么场景？</h3>
+<p><strong>答：</strong> -
+<strong>常量</strong>：<code>public static final int MAX_SIZE = 100</code>
+-
+<strong>单例（饿汉式）</strong>：<code>private static final Singleton INSTANCE = new Singleton()</code>
+- <strong>工具类</strong>：<code>public static final</code> 常量 +
+私有构造器 + 全静态方法</p>
+<hr />
+<h2 id="内部类">10. 内部类</h2>
+<h3 id="问java-内部类有哪些类型各有什么特点">问：Java
+内部类有哪些类型？各有什么特点？</h3>
+<p><strong>答：</strong> | 类型 | 说明 | 使用场景 | |——|——|———-| |
+成员内部类 | 非 static，持有外部类引用 | 逻辑紧密关联 | | 静态内部类 |
+static 修饰，不持有外部类引用 | 单例 DCL、Builder | | 局部内部类 |
+方法/代码块内定义 | 临时辅助逻辑 | | 匿名内部类 | 无类名，一次性使用 |
+回调、事件监听 |</p>
+<p><strong>内存泄漏风险</strong>：非静态内部类隐式持有外部类
+<code>this</code> 引用，若被长生命周期对象持有，外部类无法 GC。</p>
+<hr />
+<h3
+id="问为什么匿名内部类访问的局部变量必须是-final-或-effectively-final">问：为什么匿名内部类访问的局部变量必须是
+final 或 effectively final？</h3>
+<p><strong>答：</strong>
+匿名内部类可能在外部方法返回后仍存活（如传入线程、回调）。若允许修改局部变量，会出现
+<strong>两个线程操作同一变量的并发问题</strong>。</p>
+<p>编译器将 effectively final 的局部变量 <strong>复制一份</strong>
+到内部类，保证数据一致性。</p>
+<hr />
+<h2 id="bio-nio-aio">11. BIO / NIO / AIO</h2>
+<h3 id="问bionioaio-的区别">问：BIO、NIO、AIO 的区别？</h3>
+<p><strong>答：</strong></p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th>模型</th>
+<th>全称</th>
+<th>特点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BIO</td>
+<td>Blocking IO</td>
+<td>一连接一线程，阻塞等待</td>
+<td>连接数少、简单</td>
+</tr>
+<tr>
+<td>NIO</td>
+<td>Non-blocking IO</td>
+<td>多路复用（Selector），单线程处理多连接</td>
+<td>高并发（Netty、Tomcat NIO）</td>
+</tr>
+<tr>
+<td>AIO</td>
+<td>Asynchronous IO</td>
+<td>操作系统完成 IO 后回调通知</td>
+<td>连接数多、操作耗时</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NIO 核心组件</strong>： -
+<strong>Channel</strong>：双向通道（SocketChannel、FileChannel） -
+<strong>Buffer</strong>：数据容器（ByteBuffer） -
+<strong>Selector</strong>：多路复用器，监听 Channel
+事件（OP_READ/OP_WRITE/OP_CONNECT/OP_ACCEPT）</p>
+<hr />
+<h3 id="问nio-的-selector-工作原理">问：NIO 的 Selector 工作原理？</h3>
+<p><strong>答：</strong> 1. 将 Channel 注册到 Selector，关注特定事件 2.
+调用 <code>select()</code> 阻塞，直到有 Channel 就绪 3. 遍历
+<code>selectedKeys()</code>，处理就绪 Channel 的读写</p>
+<p>底层依赖 OS 的 <strong>IO 多路复用</strong>：Linux epoll、Mac
+kqueue、Windows select。</p>
+<p><strong>追问点</strong>：为什么 NIO 比 BIO 快？BIO
+每个连接占一个线程，线程切换开销大；NIO 用少量线程管理大量连接，适合
+C10K 问题。</p>
+<hr />
+<h2 id="设计模式">12. 设计模式</h2>
+<h3
+id="问单例模式有哪些实现方式各有什么优缺点">问：单例模式有哪些实现方式？各有什么优缺点？</h3>
+<p><strong>答：</strong> | 方式 | 优点 | 缺点 | |——|——|——| | 饿汉式 |
+简单、线程安全 | 类加载即创建，可能浪费 | | 懒汉式（synchronized） |
+延迟加载 | 每次获取都加锁，性能差 | | DCL + volatile | 延迟加载、性能好
+| 需理解 JMM 禁止指令重排 | | 静态内部类 | 延迟加载、线程安全 | 无法传参
+| | 枚举 | 防反射、防序列化破坏 | 不够灵活 |</p>
+<p><strong>推荐</strong>：一般场景用静态内部类；需防反射/序列化用枚举。</p>
+<hr />
+<h3
+id="问工厂模式和策略模式有什么区别">问：工厂模式和策略模式有什么区别？</h3>
+<p><strong>答：</strong> - <strong>工厂模式</strong>：关注
+<strong>对象创建</strong>，将 new 的逻辑封装，调用方无需知道具体类 -
+<strong>策略模式</strong>：关注
+<strong>行为替换</strong>，定义算法族，运行时切换策略（如支付方式：微信/支付宝）</p>
+<p><strong>组合使用</strong>：工厂创建不同策略实例，策略接口定义行为，符合开闭原则。</p>
+<hr />
+<h3 id="问代理模式在-java-中有哪些实现">问：代理模式在 Java
+中有哪些实现？</h3>
+<p><strong>答：</strong> -
+<strong>静态代理</strong>：代理类手动编写，实现与目标相同的接口 -
+<strong>JDK
+动态代理</strong>：基于接口，<code>Proxy.newProxyInstance()</code> +
+<code>InvocationHandler</code> - <strong>CGLIB
+动态代理</strong>：基于继承，生成目标类子类（Spring AOP 无接口时用）</p>
+<p>Spring AOP、MyBatis Mapper 接口、RPC 框架都大量使用代理模式。</p>
+<hr />
+<h2 id="序列化">13. 序列化</h2>
+<h3 id="问java-序列化和反序列化的原理serialversionuid-的作用">问：Java
+序列化和反序列化的原理？serialVersionUID 的作用？</h3>
+<p><strong>答：</strong> - 序列化：对象 → 字节流（实现
+<code>Serializable</code> 接口） - 反序列化：字节流 → 对象</p>
+<p><strong>serialVersionUID</strong>：版本号，反序列化时校验类是否兼容。未显式声明则
+JVM 根据类结构自动生成，类改动后 UID 变化导致
+<code>InvalidClassException</code>。</p>
+<p><strong>建议</strong>：显式声明
+<code>private static final long serialVersionUID = 1L</code>。</p>
+<hr />
+<h3 id="问transient-关键字的作用哪些字段不应序列化">问：transient
+关键字的作用？哪些字段不应序列化？</h3>
+<p><strong>答：</strong> <code>transient</code>
+修饰的字段不参与序列化，反序列化后为默认值（null / 0）。</p>
+<p>不应序列化：密码、敏感信息、不可序列化的资源（Thread、Socket）、可重新计算的缓存字段。</p>
+<hr />
+<h3 id="问如何防止序列化破坏单例">问：如何防止序列化破坏单例？</h3>
+<p><strong>答：</strong> 1. 枚举单例（JVM 保证唯一） 2. 实现
+<code>readResolve()</code> 方法，反序列化时返回已有实例</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="bu">Object</span> <span class="fu">readResolve</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> INSTANCE<span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="java-21-新特性">14. Java 21 新特性</h2>
+<h3 id="问java-21lts有哪些重要新特性">问：Java
+21（LTS）有哪些重要新特性？</h3>
+<p><strong>答：</strong> 1. <strong>虚拟线程（Virtual
+Threads）</strong>：轻量级线程，由 JVM 调度，适合 IO
+密集型，可创建百万级线程 2. <strong>结构化并发（Structured
+Concurrency，预览）</strong>：子任务生命周期绑定父任务，便于取消和错误传播
+3. <strong>Record 模式匹配</strong>：<code>switch</code>
+支持模式匹配，Record 解构 4. <strong>String
+Templates（预览）</strong>：字符串模板 5. <strong>Sequenced
+Collections</strong>：有序集合统一
+API（<code>getFirst()</code>、<code>getLast()</code>） 6. <strong>分代
+ZGC</strong>：JDK 21 正式支持分代 ZGC，Young GC 更高效 7. <strong>Record
+类</strong>：不可变数据载体，自动生成构造器、equals、hashCode、toString</p>
+<hr />
+<h3 id="问record-类是什么和-lombok-data-的区别">问：Record 类是什么？和
+Lombok <span class="citation" data-cites="Data">@Data</span>
+的区别？</h3>
+<p><strong>答：</strong> Record 是 JDK 16 正式引入的不可变数据类：</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">record</span> <span class="fu">User</span><span class="op">(</span><span class="dt">int</span> id<span class="op">,</span> <span class="bu">String</span> name<span class="op">)</span> <span class="op">{}</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">// 自动生成：构造器、getter（id()、name()）、equals、hashCode、toString</span></span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>对比</th>
+<th>Record</th>
+<th>Lombok <span class="citation" data-cites="Data">@Data</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>性质</td>
+<td>语言级特性</td>
+<td>编译期注解生成代码</td>
+</tr>
+<tr>
+<td>可变性</td>
+<td>不可变（字段 final）</td>
+<td>可变</td>
+</tr>
+<tr>
+<td>继承</td>
+<td>隐式 final，不能继承</td>
+<td>可继承</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>DTO、值对象</td>
+<td>通用 POJO</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3
+id="问虚拟线程和平台线程platform-thread的区别">问：虚拟线程和平台线程（Platform
+Thread）的区别？</h3>
+<p><strong>答：</strong> | 对比 | 平台线程 | 虚拟线程 | |——|———-|———-| |
+映射 | 1:1 映射 OS 线程 | M:N 映射，JVM 调度 | | 创建成本 | 约 1MB
+栈空间 | 约几 KB | | 阻塞影响 | 阻塞 = 浪费 OS 线程 | 阻塞时挂起，不占用
+OS 线程 | | 适用 | CPU 密集型 | IO 密集型（Web 请求、DB 查询） |</p>
+<p><strong>注意</strong>：虚拟线程中避免在 <code>synchronized</code>
+块内做 IO（会 pin 到 OS 线程），推荐用 <code>ReentrantLock</code>。</p>
+<hr />
+<h2 id="native-方法">15. Native 方法</h2>
+<h3 id="问native-方法是什么jni-的作用">问：Native 方法是什么？JNI
+的作用？</h3>
+<p><strong>答：</strong> <code>native</code> 修饰的方法由
+<strong>本地代码（C/C++）</strong> 实现，通过 <strong>JNI（Java Native
+Interface）</strong> 与 Java 交互。</p>
+<p><strong>典型应用</strong>： -
+<code>Object.hashCode()</code>、<code>Thread.start()</code> 等底层方法 -
+调用 OS API、硬件驱动 - 性能关键路径（如压缩、加密算法）</p>
+<p><strong>流程</strong>：Java 声明 native 方法 → 生成 .h 头文件 → C/C++
+实现 → 编译为 .so/.dll → JVM 加载。</p>
+<hr />
+<h3 id="问调用-native-方法有什么风险">问：调用 Native
+方法有什么风险？</h3>
+<p><strong>答：</strong> 1. <strong>平台依赖</strong>：不同 OS
+需不同本地库 2. <strong>内存管理</strong>：C/C++ 手动管理内存，可能导致
+JVM 崩溃（非 Java 异常） 3. <strong>安全</strong>：本地代码可绕过 Java
+安全沙箱 4. <strong>调试困难</strong>：JVM 工具对 Native 栈支持有限</p>
+<hr />
+<h2 id="其他高频">16. 其他高频</h2>
+<h3 id="问java-中-autocloseable-和-try-with-resources-原理">问：Java 中
+AutoCloseable 和 try-with-resources 原理？</h3>
+<p><strong>答：</strong> JDK 7 引入，自动关闭实现了
+<code>AutoCloseable</code> 的资源（Connection、Stream 等）。</p>
+<p>编译器将：</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> <span class="op">(</span><span class="bu">InputStream</span> is <span class="op">=</span> <span class="kw">new</span> <span class="bu">FileInputStream</span><span class="op">(</span><span class="st">&quot;a.txt&quot;</span><span class="op">))</span> <span class="op">{</span> <span class="kw">...</span> <span class="op">}</span></span></code></pre></div>
+<p>转换为：try 块 + finally 中调用 <code>is.close()</code>，若 close
+抛异常会 suppress 原异常。</p>
+<hr />
+<h3 id="问comparable-和-comparator-在排序中的区别">问：Comparable 和
+Comparator 在排序中的区别？</h3>
+<p><strong>答：</strong> - <code>Comparable</code>：自然排序，实现
+<code>compareTo()</code>，修改类本身 -
+<code>Comparator</code>：定制排序，独立比较器，不改源码</p>
+<p><code>TreeSet</code>/<code>TreeMap</code>
+可用两者之一；<code>Collections.sort()</code> 优先用传入的
+Comparator。</p>
+<hr />
+<h2 id="大厂追问">大厂追问</h2>
+<h3 id="值传递追问">1. 值传递追问</h3>
+<p>「你说 Java 是值传递，那交换两个对象的内容为什么可以成功？」——
+因为传递的是引用副本，副本和原引用指向同一对象，通过副本可以修改对象内部状态，但无法让原引用指向另一个对象。</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">static</span> <span class="dt">void</span> <span class="fu">swap</span><span class="op">(</span>Person a<span class="op">,</span> Person b<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    Person temp <span class="op">=</span> a<span class="op">;</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    a <span class="op">=</span> b<span class="op">;</span>  <span class="co">// 仅改变副本指向，不影响外部</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    b <span class="op">=</span> temp<span class="op">;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">// 外部引用不变；要真正交换需包装类或数组</span></span></code></pre></div>
+<h3 id="string-常量池">2. String 常量池</h3>
+<p><code>String s = new String("abc")</code> 创建了几个对象？——
+若常量池无 “abc”：堆中对象 + 常量池对象共 2 个；若已有则 1
+个堆对象。<code>intern()</code> 会将堆中字符串放入常量池。</p>
+<p><code>s1 = "abc"; s2 = new String("abc"); s1 == s2</code> →
+false；<code>s1 == s2.intern()</code> → true。</p>
+<h3 id="装箱拆箱-npe">3. 装箱拆箱 NPE</h3>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="bu">Integer</span> i <span class="op">=</span> <span class="kw">null</span><span class="op">;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>i <span class="op">==</span> <span class="dv">1</span><span class="op">)</span> <span class="op">{</span> <span class="kw">...</span> <span class="op">}</span>  <span class="co">// 拆箱时 NPE，不是 false</span></span></code></pre></div>
+<p>比较包装类用 <code>Objects.equals(i, 1)</code> 更安全。</p>
+<h3 id="泛型擦除实战">4. 泛型擦除实战</h3>
+<p>「List<String> 和 List<Integer> 在运行时是同一种类型吗？」——
+是，擦除后都是 <code>List</code>。因此不能
+<code>list instanceof List&lt;String&gt;</code>，也不能创建泛型数组
+<code>new T[10]</code>。</p>
+<h3 id="反射性能">5. 反射性能</h3>
+<p>「反射为什么慢？」—— 涉及方法查找、安全检查、无法 JIT
+内联优化。框架（Spring）启动时用反射，运行时多用缓存（如 CGLIB
+生成的子类）弥补。</p>
+<h3 id="虚拟线程陷阱">6. 虚拟线程陷阱</h3>
+<p>「虚拟线程适合所有高并发场景吗？」—— 不适合 CPU
+密集型。大量计算会占用载体线程（Carrier Thread），且 synchronized
+块会导致 pinning，失去虚拟线程优势。推荐 IO 阻塞处用
+<code>ReentrantLock</code> 替代 synchronized。</p>
+<h3 id="设计模式选型">7. 设计模式选型</h3>
+<p>「项目中用过哪些设计模式？为什么选它？」—— 准备 2~3
+个真实案例：如策略模式做支付渠道切换、工厂+模板方法做消息推送、责任链做过滤器/拦截器。</p>
+<h3 id="接口-default-方法冲突">8. 接口 default 方法冲突</h3>
+<p>类实现两个接口且 default
+方法签名相同时，类必须重写该方法，否则编译错误。</p>
+<h3 id="异常最佳实践">9. 异常最佳实践</h3>
+<ul>
+<li>不要用异常控制业务流程</li>
+<li>catch 具体异常，避免 <code>catch (Exception e)</code> 吞掉所有</li>
+<li>受检异常 vs 非受检：业务异常用 RuntimeException；可恢复的外部错误用
+Checked Exception</li>
+<li>资源关闭优先 try-with-resources</li>
+</ul>
+</body>
+</html>

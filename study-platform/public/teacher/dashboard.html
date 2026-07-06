@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师看板 - 学习进度</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/reader.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">👨‍🏫 教师 · <span style="color:var(--teacher)">进度看板</span></div>
+    <div class="topbar-user">
+      <span id="last-refresh" style="font-size:13px;color:var(--muted)"></span>
+      <button class="btn btn-sm" onclick="loadData()">刷新</button>
+      <button class="btn btn-sm btn-ghost" onclick="logout()">退出</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <nav class="teacher-nav">
+      <a href="/teacher/dashboard.html" class="active">📊 进度看板</a>
+      <a href="/teacher/plan.html">📋 排课规划</a>
+    </nav>
+
+    <div class="stat-grid" id="stats"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin:0" id="plan-title">学员列表</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-sm btn-teacher" onclick="openStudentForm()">+ 新增学员</button>
+          <div class="alert-info alert" style="margin:0;padding:8px 12px;font-size:13px">每 15 秒自动刷新 · <a href="/teacher/plan.html">排课 / 设开课日</a></div>
+        </div>
+      </div>
+      <div class="batch-filter" style="margin-bottom:12px">
+        <label style="font-size:13px;font-weight:600">期次筛选：</label>
+        <select id="batch-filter" onchange="loadData()">
+          <option value="">全部学员</option>
+        </select>
+        <span id="behind-hint" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>期次</th>
+              <th>状态</th>
+              <th>学习计划</th>
+              <th>开课日</th>
+              <th>总进度</th>
+              <th>已完成</th>
+              <th>最近打卡</th>
+              <th style="width:120px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="student-table"></tbody>
+        </table>
+      </div>
+      <p id="empty-msg" style="display:none;text-align:center;color:var(--muted);padding:24px">
+        暂无学员，点击「新增学员」添加，或让学员自行注册
+      </p>
+    </div>
+
+    <div class="card detail-panel" id="detail-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin:0" id="detail-name">学员详情</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="editStudent(selectedId)">编辑</button>
+          <button class="btn btn-sm btn-ghost" onclick="closeDetail()">关闭</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:600">分配学习计划：</label>
+        <select class="assign-select" id="assign-plan" onchange="assignPlan()"></select>
+        <span style="font-size:12px;color:var(--muted)">选「全班默认」则跟随默认计划</span>
+      </div>
+
+      <div class="progress-bar-wrap"><div class="progress-bar teacher" id="detail-progress" style="width:0%"></div></div>
+      <p style="font-size:14px;color:var(--muted);margin:8px 0 16px" id="detail-summary"></p>
+      <div id="detail-alert" style="display:none;margin-bottom:12px"></div>
+
+      <div class="note-box">
+        <label style="font-weight:600;font-size:13px">教师点评（学员端可见）</label>
+        <textarea id="teacher-note" placeholder="例：本周 MySQL 薄弱，重点复习 MVCC；保持每日打卡"></textarea>
+        <button class="btn btn-sm btn-teacher" style="margin-top:8px" onclick="saveNote()">保存点评</button>
+      </div>
+
+      <div class="day-mini-grid" id="detail-days"></div>
+      <h4 style="margin:20px 0 10px;font-size:14px;color:var(--muted)">任务明细</h4>
+      <div id="detail-checklist"></div>
+    </div>
+  </div>
+
+  <!-- 学员新增/编辑 -->
+  <div class="modal-overlay" id="student-modal">
+    <div class="modal" style="max-width:440px">
+      <h3 id="student-modal-title">新增学员</h3>
+      <div id="student-modal-alert"></div>
+      <form id="student-form">
+        <div class="form-group">
+          <label>姓名 <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="sf-name" placeholder="学员真实姓名" required>
+        </div>
+        <div class="form-group">
+          <label>PIN 码（可选）</label>
+          <input type="text" id="sf-pin" placeholder="留空则学员登录无需密码">
+          <div class="form-hint">学员登录时校验，防止他人代登</div>
+        </div>
+        <div class="form-group">
+          <label>期次 / 班级</label>
+          <input type="text" id="sf-batch" placeholder="如：7月一期">
+        </div>
+        <div class="form-group">
+          <label>学习计划</label>
+          <select id="sf-plan"></select>
+        </div>
+        <div class="form-group">
+          <label>个人开课日（可选）</label>
+          <input type="date" id="sf-start">
+          <div class="form-hint">留空则跟随计划开课日或注册日</div>
+        </div>
+        <div class="form-group" id="sf-reset-wrap" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
+            <input type="checkbox" id="sf-reset"> 清空该学员打卡记录
+          </label>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+          <button type="submit" class="btn btn-teacher" style="flex:1" id="sf-submit">保存</button>
+          <button type="button" class="btn" onclick="closeStudentForm()">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!API.getToken('teacher')) location.href = '/teacher/';
+
+    let planData = null;
+    let studentsData = [];
+    let plansList = [];
+    let activePlanId = null;
+    let refreshTimer = null;
+    let selectedId = null;
+    let editingStudentId = null;
+    let currentBatch = '';
+
+    async function loadData() {
+      try {
+        const batch = document.getElementById('batch-filter')?.value || '';
+        currentBatch = batch;
+        const qs = batch ? `?batch=${encodeURIComponent(batch)}` : '';
+        const board = await API.request('/api/teacher/students' + qs, { headers: API.teacherAuth() });
+        studentsData = board.students;
+        plansList = board.plans || [];
+        activePlanId = board.activePlanId;
+        document.getElementById('plan-title').textContent =
+          (board.planName || '默认计划') + ' · 学员列表';
+        renderStats(board.stats);
+        renderBatchFilter(board.batches, batch);
+        renderTable(board.students);
+        document.getElementById('last-refresh').textContent =
+          '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+        if (selectedId) {
+          const s = board.students.find(x => x.id === selectedId);
+          if (s) {
+            await loadStudentPlan(s);
+            renderDetail(s);
+          } else {
+            closeDetail();
+          }
+        }
+      } catch (e) {
+        if (e.message.includes('未登录')) {
+          API.setToken('teacher', null);
+          location.href = '/teacher/';
+        }
+      }
+    }
+
+    async function loadStudentPlan(student) {
+      const planId = student.planId || activePlanId;
+      if (planId) {
+        planData = await API.request(`/api/teacher/plans/${planId}`, { headers: API.teacherAuth() });
+      } else {
+        planData = { days: [] };
+      }
+    }
+
+    function renderPlanOptions(selectEl, selectedPlanId) {
+      selectEl.innerHTML =
+        `<option value="">全班默认计划</option>` +
+        plansList.map(p => {
+          const extra = p.startDate ? ` · ${p.startDate} 开课` : '';
+          const sel = selectedPlanId === p.id ? 'selected' : '';
+          return `<option value="${p.id}" ${sel}>${escapeHtml(p.planName)}${extra}</option>`;
+        }).join('');
+    }
+
+    function renderAssignSelect(student) {
+      renderPlanOptions(document.getElementById('assign-plan'), student.planId);
+    }
+
+    async function assignPlan() {
+      if (!selectedId) return;
+      const planId = document.getElementById('assign-plan').value || null;
+      try {
+        const s = await API.request(`/api/teacher/students/${selectedId}/plan`, {
+          method: 'PUT',
+          headers: API.teacherAuth(),
+          body: JSON.stringify({ planId })
+        });
+        await loadStudentPlan(s);
+        renderDetail(s);
+        loadData();
+      } catch (e) { alert(e.message); }
+    }
+
+    function renderBatchFilter(batches, selected) {
+      const sel = document.getElementById('batch-filter');
+      const opts = ['<option value="">全部学员</option>'];
+      batches.forEach(b => {
+        opts.push(`<option value="${escapeHtml(b)}" ${selected === b ? 'selected' : ''}>${escapeHtml(b)}</option>`);
+      });
+      opts.push(`<option value="__none__" ${selected === '__none__' ? 'selected' : ''}>未分期次</option>`);
+      sel.innerHTML = opts.join('');
+    }
+
+    function renderStats(stats) {
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card teacher"><div class="stat-num">${stats.totalStudents}</div><div class="stat-label">学员总数</div></div>
+        <div class="stat-card teacher"><div class="stat-num">${stats.avgProgress}%</div><div class="stat-label">平均进度</div></div>
+        <div class="stat-card teacher"><div class="stat-num">${stats.activeToday}</div><div class="stat-label">今日打卡</div></div>
+        <div class="stat-card teacher"><div class="stat-num" style="color:var(--danger)">${stats.behindCount || 0}</div><div class="stat-label">需关注</div></div>
+      `;
+      const hint = document.getElementById('behind-hint');
+      if (hint) hint.textContent = stats.behindCount ? `⚠️ ${stats.behindCount} 名学员落后或未打卡` : '';
+    }
+
+    function formatStartDate(s) {
+      if (s.planStartDate) return s.planStartDate;
+      const plan = plansList.find(p => p.id === (s.planId || activePlanId));
+      if (plan?.startDate) return plan.startDate + '（班）';
+      if (s.createdAt) return s.createdAt.split('T')[0] + '（注册）';
+      return '—';
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('student-table');
+      const empty = document.getElementById('empty-msg');
+      if (!list.length) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      tbody.innerHTML = list.map(s => {
+        const alertHtml = s.alert?.level === 'warning'
+          ? `<span class="alert-pill" title="${escapeHtml(s.alert.reasons.join('；'))}">需关注</span>`
+          : '<span style="color:var(--muted);font-size:12px">正常</span>';
+        return `
+        <tr class="row-clickable ${s.alert?.level === 'warning' ? 'row-alert' : ''}" onclick="showDetail('${s.id}')">
+          <td><strong>${escapeHtml(s.name)}</strong></td>
+          <td style="font-size:13px">${escapeHtml(s.batch || '—')}</td>
+          <td>${alertHtml}</td>
+          <td style="font-size:13px;color:var(--muted)">${escapeHtml(s.planName)}</td>
+          <td style="font-size:13px">${escapeHtml(formatStartDate(s))}</td>
+          <td>${progressBadge(s.progress.percent)}</td>
+          <td>${s.progress.done} / ${s.progress.total}</td>
+          <td>${formatTime(s.lastCheckIn)}</td>
+          <td class="col-actions" onclick="event.stopPropagation()">
+            <div class="table-actions">
+              <button class="btn btn-sm" onclick="editStudent('${s.id}')">编辑</button>
+              <button class="btn btn-sm btn-ghost" onclick="deleteStudent('${s.id}')">删除</button>
+            </div>
+          </td>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openStudentForm(studentId) {
+      editingStudentId = studentId || null;
+      const isEdit = !!studentId;
+      document.getElementById('student-modal-title').textContent = isEdit ? '编辑学员' : '新增学员';
+      document.getElementById('sf-submit').textContent = isEdit ? '保存修改' : '添加学员';
+      document.getElementById('sf-reset-wrap').style.display = isEdit ? 'block' : 'none';
+      document.getElementById('sf-reset').checked = false;
+      document.getElementById('student-modal-alert').innerHTML = '';
+
+      renderPlanOptions(document.getElementById('sf-plan'), null);
+
+      if (isEdit) {
+        const s = studentsData.find(x => x.id === studentId);
+        if (!s) return;
+        document.getElementById('sf-name').value = s.name;
+        document.getElementById('sf-pin').value = s.pin || '';
+        document.getElementById('sf-plan').value = s.planId || '';
+        document.getElementById('sf-start').value = s.planStartDate || '';
+        document.getElementById('sf-batch').value = s.batch || '';
+      } else {
+        document.getElementById('student-form').reset();
+        document.getElementById('sf-plan').value = '';
+      }
+
+      document.getElementById('student-modal').classList.add('show');
+      document.getElementById('sf-name').focus();
+    }
+
+    function editStudent(id) {
+      if (!id) return;
+      openStudentForm(id);
+    }
+
+    function closeStudentForm() {
+      document.getElementById('student-modal').classList.remove('show');
+      editingStudentId = null;
+    }
+
+    document.getElementById('student-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const alertEl = document.getElementById('student-modal-alert');
+      const btn = document.getElementById('sf-submit');
+      alertEl.innerHTML = '';
+      const name = document.getElementById('sf-name').value.trim();
+      if (!name) {
+        alertEl.innerHTML = '<div class="alert alert-error">请输入姓名</div>';
+        return;
+      }
+      const body = {
+        name,
+        pin: document.getElementById('sf-pin').value,
+        planId: document.getElementById('sf-plan').value || null,
+        planStartDate: document.getElementById('sf-start').value || null,
+        batch: document.getElementById('sf-batch').value.trim()
+      };
+      if (editingStudentId && document.getElementById('sf-reset').checked) {
+        body.resetProgress = true;
+      }
+      btn.disabled = true;
+      try {
+        if (editingStudentId) {
+          await API.request(`/api/teacher/students/${editingStudentId}`, {
+            method: 'PUT',
+            headers: API.teacherAuth(),
+            body: JSON.stringify(body)
+          });
+        } else {
+          await API.request('/api/teacher/students', {
+            method: 'POST',
+            headers: API.teacherAuth(),
+            body: JSON.stringify(body)
+          });
+        }
+        closeStudentForm();
+        await loadData();
+      } catch (err) {
+        alertEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    async function deleteStudent(id) {
+      const s = studentsData.find(x => x.id === id);
+      if (!s) return;
+      if (!confirm(`确定删除学员「${s.name}」？\n打卡记录将一并清除，不可恢复。`)) return;
+      try {
+        await API.request(`/api/teacher/students/${id}`, {
+          method: 'DELETE',
+          headers: API.teacherAuth()
+        });
+        if (selectedId === id) closeDetail();
+        loadData();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function showDetail(id) {
+      selectedId = id;
+      const s = studentsData.find(x => x.id === id);
+      if (!s) return;
+      renderAssignSelect(s);
+      await loadStudentPlan(s);
+      renderDetail(s);
+      document.getElementById('detail-panel').classList.add('show');
+      document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderDetail(s) {
+      document.getElementById('detail-name').textContent = s.name + ' 的学习进度';
+      document.getElementById('detail-progress').style.width = s.progress.percent + '%';
+      document.getElementById('detail-summary').textContent =
+        `期次：${s.batch || '—'} · 计划：${s.planName} · 开课：${formatStartDate(s)} · 已完成 ${s.progress.done}/${s.progress.total}（${s.progress.percent}%）· 最近打卡：${formatTime(s.lastCheckIn)}`;
+
+      const alertEl = document.getElementById('detail-alert');
+      if (s.alert?.level === 'warning') {
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `<div class="alert-pill" style="display:inline-block;margin-bottom:6px">需关注</div><div style="font-size:13px;color:#b91c1c">${s.alert.reasons.map(escapeHtml).join('；')}</div>`;
+      } else {
+        alertEl.style.display = 'none';
+      }
+
+      document.getElementById('teacher-note').value = s.teacherNote || '';
+
+      document.getElementById('detail-days').innerHTML = s.dayProgress.map(d => `
+        <div class="day-mini">
+          <div>${d.title.replace(/^D\d+ · /, '')}</div>
+          <div style="font-weight:700;margin-top:2px">${d.percent}%</div>
+          <div class="day-mini-bar"><div class="day-mini-bar-fill" style="width:${d.percent}%"></div></div>
+        </div>
+      `).join('');
+
+      const days = planData?.days || [];
+      document.getElementById('detail-checklist').innerHTML = days.length ? days.map(day => {
+        const done = day.items.filter(i => s.checks[i.id]).length;
+        return `
+          <div class="day-block" style="margin-bottom:8px">
+            <div class="day-header" style="cursor:default">
+              <span>${day.title}</span>
+              <span style="color:var(--muted);font-weight:500">${done}/${day.items.length}</span>
+            </div>
+            <div class="day-body">
+              ${day.items.map(item => `
+                <div class="check-item ${s.checks[item.id] ? 'done' : ''}" style="cursor:default">
+                  <span style="width:18px;text-align:center">${s.checks[item.id] ? '✅' : '⬜'}</span>
+                  <label style="cursor:default">${item.text}<span class="check-tag">${item.tag}</span></label>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }).join('') : '<p style="color:var(--muted);font-size:13px">暂无任务</p>';
+    }
+
+    async function saveNote() {
+      if (!selectedId) return;
+      const note = document.getElementById('teacher-note').value;
+      try {
+        const s = await API.request(`/api/teacher/students/${selectedId}/note`, {
+          method: 'PUT',
+          headers: API.teacherAuth(),
+          body: JSON.stringify({ note })
+        });
+        renderDetail(s);
+        loadData();
+      } catch (e) { alert(e.message); }
+    }
+
+    function closeDetail() {
+      selectedId = null;
+      document.getElementById('detail-panel').classList.remove('show');
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    async function logout() {
+      API.setToken('teacher', null);
+      clearInterval(refreshTimer);
+      location.href = '/teacher/';
+    }
+
+    document.getElementById('student-modal').addEventListener('click', e => {
+      if (e.target.id === 'student-modal') closeStudentForm();
+    });
+
+    loadData();
+    refreshTimer = setInterval(loadData, 15000);
+  </script>
+</body>
+</html>

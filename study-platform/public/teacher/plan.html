@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排课规划 - 教师端</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/teacher-plan.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">👨‍🏫 小班辅导 · <span style="color:var(--teacher)">排课规划</span></div>
+    <div class="topbar-user">
+      <button class="btn btn-sm btn-ghost" onclick="logout()">退出</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <nav class="teacher-nav">
+      <a href="/teacher/dashboard.html">📊 进度看板</a>
+      <a href="/teacher/plan.html" class="active">📋 排课规划</a>
+    </nav>
+
+    <div id="alert-box"></div>
+
+    <div class="plan-workspace">
+      <!-- 左侧：计划列表 -->
+      <aside class="card plan-sidebar" style="padding:16px">
+        <div class="card-title" style="font-size:15px;margin-bottom:8px">班级计划</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px">一个计划对应一期小班，可设开课日与专属课表</p>
+        <div id="plan-list"></div>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-sm btn-teacher" onclick="createPlan()">+ 新建班级计划</button>
+          <button class="btn btn-sm" onclick="importDefault()">导入 3 周冲刺模板</button>
+        </div>
+      </aside>
+
+      <!-- 中间：编辑器 -->
+      <main class="card plan-editor-card" id="editor-panel">
+        <div id="editor-empty" style="text-align:center;padding:64px 24px;color:var(--muted)">
+          <div style="font-size:40px;margin-bottom:12px">📋</div>
+          <p>选择左侧计划，或新建一期小班课表</p>
+        </div>
+        <div id="editor-content" style="display:none">
+          <div class="plan-editor-head">
+            <input type="text" class="plan-name-input" id="plan-name" placeholder="计划名称，如：7月后端冲刺班">
+            <div class="plan-meta-grid">
+              <div>
+                <label>班级 / 期次</label>
+                <input type="text" id="plan-class" placeholder="如：2026 暑期一期">
+              </div>
+              <div>
+                <label>开课日期（全班日历起点）</label>
+                <input type="date" id="plan-start">
+              </div>
+              <div style="grid-column:1/-1">
+                <label>辅导说明（选填，给自己看）</label>
+                <textarea id="plan-desc" placeholder="目标岗位、薄弱点、每周答疑时间…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-toolbar">
+            <span class="dirty-dot" id="dirty-dot" title="有未保存修改"></span>
+            <button class="btn btn-sm btn-teacher" onclick="savePlan()">💾 保存课表</button>
+            <button class="btn btn-sm" onclick="activatePlan()" id="btn-activate">设为默认班</button>
+            <button class="btn btn-sm" onclick="syncStartDate()">同步开课日到学员</button>
+            <button class="btn btn-sm" onclick="duplicatePlan()">复制计划</button>
+            <button class="btn btn-sm" onclick="addDay()">+ 加一天</button>
+            <span id="active-badge" class="badge badge-green" style="display:none">当前默认</span>
+            <span class="spacer"></span>
+            <span style="font-size:13px;color:var(--muted)" id="meta-info"></span>
+          </div>
+
+          <div class="hint-bar">
+            <strong>小班辅导流程：</strong>定开课日 → 排每日任务 → 保存 →「设为默认班」或到看板给学员指定计划。
+            学员日历按<strong>开课日</strong>算 D1，不再绑注册日。改开课日后点「同步开课日到学员」。
+          </div>
+
+          <div class="tag-stats" id="tag-stats"></div>
+          <div class="week-tabs" id="week-tabs"></div>
+          <div class="days-scroll" id="days-editor"></div>
+        </div>
+      </main>
+
+      <!-- 右侧：任务库 + 预览 -->
+      <aside class="card plan-aside-right">
+        <div class="preset-panel">
+          <h4>📚 任务库 · 点选插入</h4>
+          <p style="font-size:11px;color:var(--muted);margin:-6px 0 10px">插入到当前选中的天（默认最后一天）</p>
+          <div id="preset-list">加载中…</div>
+        </div>
+        <div class="preview-cal">
+          <h4>📅 学员日历预览</h4>
+          <div id="mini-cal"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/plan-editor.js"></script>
+  <script>
+    if (!API.getToken('teacher')) location.href = '/teacher/';
+
+    let plansMeta = [];
+    let activePlanId = null;
+    let currentPlanId = null;
+    let draft = null;
+    let dirty = false;
+    let tags = [];
+    let volumes = [];
+    let libraries = [];
+    let defaultTag = '学习';
+    let taskPresets = [];
+    let currentWeek = 0;
+    let insertDayIndex = null;
+
+    function showAlert(msg, type = 'error') {
+      document.getElementById('alert-box').innerHTML =
+        `<div class="alert alert-${type}">${msg}</div>`;
+      setTimeout(() => { document.getElementById('alert-box').innerHTML = ''; }, 4500);
+    }
+
+    function setDirty(v) {
+      dirty = v;
+      document.getElementById('dirty-dot')?.classList.toggle('show', dirty);
+    }
+
+    async function loadPresets() {
+      const data = await API.request('/api/teacher/presets', { headers: API.teacherAuth() });
+      volumes = data.volumes || [];
+      libraries = data.libraries || [];
+      taskPresets = data.taskPresets || [];
+      tags = data.tags || ['学习', '八股', '算法', '其他'];
+      defaultTag = data.defaultTag || '学习';
+      document.getElementById('preset-list').innerHTML = taskPresets.map((g, gi) => `
+        <div class="preset-group">
+          <div class="preset-group-title">${escapeHtml(g.group)}</div>
+          ${g.tasks.map((t, ti) => `
+            <button type="button" class="preset-chip" data-gi="${gi}" data-ti="${ti}">
+              ${escapeHtml(t.text)}<span class="tag-mini">${t.tag}</span>
+            </button>
+          `).join('')}
+        </div>
+      `).join('');
+      document.querySelectorAll('.preset-chip').forEach(btn => {
+        btn.onclick = () => {
+          const g = taskPresets[+btn.dataset.gi];
+          const t = g.tasks[+btn.dataset.ti];
+          insertPresetTask(g, t);
+        };
+      });
+    }
+
+    function insertPresetTask(preset, task) {
+      if (!draft) return;
+      const di = insertDayIndex ?? draft.days.length - 1;
+      const day = draft.days[di];
+      if (!day) { showAlert('请先添加学习日'); return; }
+      const id = `${day.id}-${day.items.length + 1}`;
+      day.items.push({
+        id,
+        text: task.text,
+        tag: task.tag || defaultTag,
+        link: task.link || preset?.link || '',
+        ref: '',
+        libraryId: ''
+      });
+      setDirty(true);
+      renderEditor();
+      showAlert(`已插入到 D${di + 1}`, 'success');
+    }
+
+    async function loadPlanList() {
+      const data = await API.request('/api/teacher/plans', { headers: API.teacherAuth() });
+      plansMeta = data.plans;
+      activePlanId = data.activePlanId;
+      tags = data.tags || tags;
+      document.getElementById('plan-list').innerHTML = plansMeta.map(p => `
+        <div class="plan-item ${p.id === currentPlanId ? 'active' : ''}" onclick="selectPlan('${p.id}')">
+          ${escapeHtml(p.planName)}
+          ${p.isActive ? '<span class="badge badge-green" style="margin-left:4px">默认</span>' : ''}
+          ${p.className ? `<div style="font-size:11px;color:var(--muted)">${escapeHtml(p.className)}</div>` : ''}
+          <small>${p.startDate || '未设开课日'} · ${p.totalDays}天 · ${p.studentCount}人</small>
+        </div>
+      `).join('') || '<p style="font-size:13px;color:var(--muted)">暂无计划</p>';
+      if (!currentPlanId && plansMeta.length) selectPlan(plansMeta[0].id);
+    }
+
+    async function selectPlan(id) {
+      if (dirty && !confirm('有未保存修改，切换将丢失，继续？')) return;
+      currentPlanId = id;
+      const p = await API.request(`/api/teacher/plans/${id}`, { headers: API.teacherAuth() });
+      draft = {
+        id: p.id,
+        planName: p.planName,
+        startDate: p.startDate || '',
+        description: p.description || '',
+        className: p.className || '',
+        days: JSON.parse(JSON.stringify(p.days)),
+        isActive: p.isActive
+      };
+      setDirty(false);
+      currentWeek = 0;
+      insertDayIndex = draft.days.length ? draft.days.length - 1 : null;
+      renderEditor();
+      loadPlanList();
+    }
+
+    function bindMetaInputs() {
+      ['plan-name', 'plan-class', 'plan-start', 'plan-desc'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.oninput = () => setDirty(true);
+      });
+    }
+
+    function renderEditor() {
+      if (!draft) {
+        document.getElementById('editor-empty').style.display = 'block';
+        document.getElementById('editor-content').style.display = 'none';
+        return;
+      }
+      document.getElementById('editor-empty').style.display = 'none';
+      document.getElementById('editor-content').style.display = 'block';
+
+      document.getElementById('plan-name').value = draft.planName;
+      document.getElementById('plan-class').value = draft.className || '';
+      document.getElementById('plan-start').value = draft.startDate || '';
+      document.getElementById('plan-desc').value = draft.description || '';
+      bindMetaInputs();
+
+      document.getElementById('active-badge').style.display = draft.isActive ? 'inline' : 'none';
+      document.getElementById('btn-activate').style.display = draft.isActive ? 'none' : 'inline-flex';
+
+      const total = draft.days.reduce((s, d) => s + d.items.length, 0);
+      const endHint = draft.startDate && draft.days.length
+        ? ` · 至 ${PlanEditor.dayDateLabel(draft.startDate, draft.days.length - 1)}`
+        : '';
+      document.getElementById('meta-info').textContent =
+        `${draft.days.length} 天 · ${total} 任务${endHint}`;
+
+      document.getElementById('tag-stats').innerHTML =
+        PlanEditor.renderTagStats(draft.days, tags);
+
+      const weekCount = Math.max(1, Math.ceil(draft.days.length / 7));
+      if (currentWeek >= weekCount) currentWeek = weekCount - 1;
+      document.getElementById('week-tabs').innerHTML = Array.from({ length: weekCount }, (_, w) => {
+        const from = w * 7 + 1;
+        const to = Math.min((w + 1) * 7, draft.days.length);
+        return `<button type="button" class="week-tab ${w === currentWeek ? 'active' : ''}"
+          onclick="setWeek(${w})">第 ${w + 1} 周 · D${from}${from < to ? '–D' + to : ''}</button>`;
+      }).join('');
+
+      const startDate = document.getElementById('plan-start').value || draft.startDate;
+      const visibleDays = draft.days
+        .map((day, di) => ({ day, di }))
+        .filter(({ di }) => PlanEditor.weekIndex(di) === currentWeek);
+
+      document.getElementById('days-editor').innerHTML = visibleDays.map(({ day, di }) =>
+        PlanEditor.renderDay(day, di, tags, volumes, startDate, false, defaultTag)
+      ).join('') || '<p style="padding:16px;color:var(--muted)">本周暂无天数，点击「+ 加一天」</p>';
+
+      PlanEditor.bindDayEvents(
+        document.getElementById('days-editor'),
+        draft,
+        () => { setDirty(true); renderEditor(); },
+        () => setDirty(true),
+        volumes
+      );
+
+      document.getElementById('mini-cal').innerHTML =
+        PlanEditor.renderMiniCalendar(startDate, draft.days.length);
+    }
+
+    function setWeek(w) {
+      currentWeek = w;
+      insertDayIndex = w * 7;
+      if (insertDayIndex >= draft.days.length) insertDayIndex = draft.days.length - 1;
+      renderEditor();
+    }
+
+    function collectDraftFromForm() {
+      draft.planName = document.getElementById('plan-name').value.trim() || '未命名计划';
+      draft.className = document.getElementById('plan-class').value.trim();
+      draft.startDate = document.getElementById('plan-start').value || null;
+      draft.description = document.getElementById('plan-desc').value.trim();
+    }
+
+    async function savePlan() {
+      if (!draft) return;
+      collectDraftFromForm();
+      try {
+        const saved = await API.request(`/api/teacher/plans/${draft.id}`, {
+          method: 'PUT',
+          headers: API.teacherAuth(),
+          body: JSON.stringify({
+            planName: draft.planName,
+            startDate: draft.startDate,
+            description: draft.description,
+            className: draft.className,
+            days: draft.days
+          })
+        });
+        draft.isActive = saved.id === activePlanId;
+        setDirty(false);
+        showAlert('课表已保存', 'success');
+        loadPlanList();
+        renderEditor();
+      } catch (e) { showAlert(e.message); }
+    }
+
+    async function activatePlan() {
+      if (!draft) return;
+      await savePlan();
+      try {
+        await API.request(`/api/teacher/plans/${draft.id}/activate`, {
+          method: 'PUT',
+          headers: API.teacherAuth()
+        });
+        activePlanId = draft.id;
+        draft.isActive = true;
+        showAlert('已设为默认班，新学员自动跟此课表', 'success');
+        loadPlanList();
+        renderEditor();
+      } catch (e) { showAlert(e.message); }
+    }
+
+    async function syncStartDate() {
+      if (!draft) return;
+      collectDraftFromForm();
+      if (!draft.startDate) { showAlert('请先设置开课日期并保存'); return; }
+      await savePlan();
+      try {
+        const r = await API.request(`/api/teacher/plans/${draft.id}/sync-start`, {
+          method: 'POST',
+          headers: API.teacherAuth()
+        });
+        showAlert(`已同步 ${r.synced} 名学员，D1 = ${r.startDate}`, 'success');
+      } catch (e) { showAlert(e.message); }
+    }
+
+    async function duplicatePlan() {
+      if (!draft) return;
+      try {
+        const p = await API.request(`/api/teacher/plans/${draft.id}/duplicate`, {
+          method: 'POST',
+          headers: API.teacherAuth(),
+          body: JSON.stringify({})
+        });
+        currentPlanId = p.id;
+        setDirty(false);
+        await loadPlanList();
+        await selectPlan(p.id);
+        showAlert('已复制为新计划，请修改开课日与班级名', 'success');
+      } catch (e) { showAlert(e.message); }
+    }
+
+    async function createPlan() {
+      const start = new Date();
+      start.setDate(start.getDate() + ((8 - start.getDay()) % 7 || 7));
+      const startStr = start.toISOString().split('T')[0];
+      try {
+        const p = await API.request('/api/teacher/plans', {
+          method: 'POST',
+          headers: API.teacherAuth(),
+          body: JSON.stringify({
+            planName: '新一期小班',
+            className: '',
+            startDate: startStr,
+            description: '',
+            days: [{ id: 'd1', title: 'D1 · 第一天', items: [{ id: 'd1-1', text: '开班说明 + 学习节奏', tag: '复盘' }] }]
+          })
+        });
+        currentPlanId = p.id;
+        setDirty(false);
+        await loadPlanList();
+        await selectPlan(p.id);
+        showAlert('已创建，默认开课日为下周一', 'success');
+      } catch (e) { showAlert(e.message); }
+    }
+
+    async function importDefault() {
+      try {
+        const p = await API.request('/api/teacher/plans/import-default', {
+          method: 'POST',
+          headers: API.teacherAuth()
+        });
+        currentPlanId = p.id;
+        setDirty(false);
+        await loadPlanList();
+        await selectPlan(p.id);
+        showAlert('已导入 3 周冲刺模板，请设置开课日', 'success');
+      } catch (e) { showAlert(e.message); }
+    }
+
+    function addDay() {
+      if (!draft) return;
+      const n = draft.days.length + 1;
+      const id = 'd' + n;
+      draft.days.push({ id, title: `D${n} · 新的一天`, items: [] });
+      currentWeek = PlanEditor.weekIndex(n - 1);
+      insertDayIndex = n - 1;
+      setDirty(true);
+      renderEditor();
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
+
+    function logout() {
+      if (dirty && !confirm('有未保存修改，确定退出？')) return;
+      API.setToken('teacher', null);
+      location.href = '/teacher/';
+    }
+
+    window.addEventListener('beforeunload', e => {
+      if (dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    Promise.all([loadPresets(), loadPlanList()]).catch(() => {
+      API.setToken('teacher', null);
+      location.href = '/teacher/';
+    });
+  </script>
+</body>
+</html>

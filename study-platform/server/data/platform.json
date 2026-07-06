@@ -1,0 +1,78 @@
+{
+  "platformName": "学习计划平台",
+  "platformSubtitle": "小班辅导 · 每日打卡 · 教师督学",
+  "domains": {
+    "student": "183ehjez.cn",
+    "teacher": "185egugn.cn",
+    "useHttps": true
+  },
+  "defaultTag": "学习",
+  "tags": ["学习", "八股", "算法", "阅读", "视频", "练习", "复盘", "模拟", "作业", "项目", "其他"],
+  "externalResources": [
+    { "id": "xl-home", "name": "官网首页", "url": "https://xiaolincoding.com/", "desc": "所有内容入口" },
+    { "id": "xl-network", "name": "图解网络", "url": "https://xiaolincoding.com/network/", "desc": "20W 字 + 500 图" },
+    { "id": "xl-os", "name": "图解系统", "url": "https://xiaolincoding.com/os/", "desc": "16W 字 + 400 图" },
+    { "id": "xl-mysql", "name": "图解 MySQL", "url": "https://xiaolincoding.com/mysql/", "desc": "20W 字 + 320 图" },
+    { "id": "xl-redis", "name": "图解 Redis", "url": "https://xiaolincoding.com/redis/", "desc": "图解 Redis" },
+    { "id": "xl-interview", "name": "面试题合集", "url": "https://xiaolincoding.com/interview/", "desc": "22 套，约 40W 字" },
+    { "id": "xl-backend", "name": "大厂面经", "url": "https://xiaolincoding.com/backend_interview/", "desc": "真实面经 + 解析" },
+    { "id": "xl-github", "name": "GitHub", "url": "https://github.com/xiaolincoder/CS-Base", "desc": "开源仓库" },
+    { "id": "lc-hot100", "name": "LeetCode Hot 100", "url": "https://leetcode.cn/studyplan/top-100-liked/", "desc": "面试最高命中率 · 100 题" },
+    { "id": "lc-codetop", "name": "CodeTop", "url": "https://codetop.cc/", "desc": "按公司查真题" }
+  ],
+  "libraries": [],
+  "taskPresets": [
+    {
+      "group": "MySQL",
+      "link": "https://xiaolincoding.com/mysql/",
+      "tasks": [
+        { "text": "图解 MySQL：索引 + B+ 树、最左匹配", "tag": "八股" },
+        { "text": "图解 MySQL：事务 + MVCC + redo/undo/binlog", "tag": "八股" },
+        { "text": "图解 MySQL：行锁/间隙锁", "tag": "八股" }
+      ]
+    },
+    {
+      "group": "Redis",
+      "link": "https://xiaolincoding.com/redis/",
+      "tasks": [
+        { "text": "图解 Redis：五类型 + 底层结构", "tag": "八股" },
+        { "text": "图解 Redis：缓存穿透/击穿/雪崩", "tag": "八股" },
+        { "text": "图解 Redis：持久化 + 主从/Cluster", "tag": "八股" }
+      ]
+    },
+    {
+      "group": "Java 并发",
+      "link": "https://xiaolincoding.com/interview/",
+      "tasks": [
+        { "text": "面试题：synchronized 原理", "tag": "八股" },
+        { "text": "面试题：volatile + CAS + AQS", "tag": "八股" },
+        { "text": "面试题：线程池 7 参数", "tag": "八股" }
+      ]
+    },
+    {
+      "group": "Hot 100",
+      "link": "https://leetcode.cn/studyplan/top-100-liked/",
+      "tasks": [
+        { "text": "LC Hot 100：今日 4 题（按课表）", "tag": "算法" },
+        { "text": "Hot 100 错题重做", "tag": "复盘" }
+      ]
+    },
+    {
+      "group": "辅导环节",
+      "link": "",
+      "tasks": [
+        { "text": "整理本周错题本", "tag": "复盘" },
+        { "text": "画一张知识导图（当日主题）", "tag": "复盘" },
+        { "text": "模拟面试 1 轮 + 反馈记录", "tag": "模拟" },
+        { "text": "项目 STAR 故事打磨", "tag": "项目" },
+        { "text": "观看课程视频并完成笔记", "tag": "视频" },
+        { "text": "完成课后作业", "tag": "作业" }
+      ]
+    }
+  ],
+  "planTemplates": [
+    { "id": "sprint-hot100", "name": "21 天冲刺班", "desc": "八股 + Hot 100 每天 5 题", "weeks": 3 },
+    { "id": "sprint-3w", "name": "3 周冲刺班", "desc": "适合临近目标节点", "weeks": 3 },
+    { "id": "system-6w", "name": "6 周系统班", "desc": "循序渐进全覆盖", "weeks": 6 }
+  ]
+}

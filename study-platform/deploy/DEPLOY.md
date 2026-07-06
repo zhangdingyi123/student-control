@@ -1,0 +1,366 @@
+# 学习计划平台 — 阿里云完整部署指南
+
+从零到学员/教师可访问，按顺序执行即可。
+
+---
+
+## 一、资源清单
+
+| 项目 | 你的配置 |
+|------|----------|
+| ECS 公网 IP | `47.97.176.185` |
+| 系统 | Ubuntu 22.04 64 位 |
+| 地域 | 华东 1（杭州） |
+| 学员域名 | `183ehjez.cn` |
+| 教师域名 | `185egugn.cn` |
+| Node 端口（仅本机） | `3847` |
+| 对外端口 | `80` / `443`（Nginx 反代） |
+
+| 访问地址 | 说明 |
+|----------|------|
+| https://183ehjez.cn/student/ | 学员打卡、日历 |
+| https://185egugn.cn/teacher/ | 教师看板、课表管理 |
+
+---
+
+## 二、阶段 0：域名交割 & 备案
+
+### 0.1 等待域名交割
+
+1. 登录 [阿里云域名控制台](https://dc.console.aliyun.com/)
+2. 找到 `183ehjez.cn`、`185egugn.cn`
+3. 状态从 **处理中** 变为 **正常** 后再做 DNS
+
+### 0.2 ICP 备案（大陆服务器必做）
+
+你的 ECS 在**杭州（大陆）**，`.cn` 域名绑定大陆服务器通常需要备案，否则可能无法访问。
+
+1. 阿里云控制台 → **备案** → 开始备案
+2. 按向导填写主体信息、域名、服务器（选当前 ECS）
+3. 备案审核约 **7～20 个工作日**
+4. 备案期间可先把服务部署好，用服务器 IP 内测
+
+> 若暂时不想备案：可把 ECS 换到香港节点，或先用 `http://47.97.176.185` 临时访问（需改 Nginx，见文末附录）。
+
+---
+
+## 三、阶段 1：阿里云控制台配置
+
+### 1.1 安全组放行端口
+
+1. ECS 控制台 → 实例 `launch-advisor-20260604` → **安全组**
+2. **入方向** → 添加规则：
+
+| 授权策略 | 协议 | 端口 | 源 | 说明 |
+|---------|------|------|-----|------|
+| 允许 | TCP | 22 | 0.0.0.0/0 | SSH（建议后期改为你的 IP） |
+| 允许 | TCP | 80 | 0.0.0.0/0 | HTTP |
+| 允许 | TCP | 443 | 0.0.0.0/0 | HTTPS |
+
+**不要**开放 `3847` 到公网。
+
+### 1.2 DNS 解析
+
+域名交割完成后：
+
+1. 控制台 → **云解析 DNS** → 分别进入两个域名
+2. 每个域名添加 **2 条 A 记录**：
+
+| 记录类型 | 主机记录 | 记录值 | TTL |
+|---------|---------|--------|-----|
+| A | `@` | `47.97.176.185` | 10 分钟 |
+| A | www | `47.97.176.185` | 10 分钟 |
+
+3. 等待 5～30 分钟生效，本机验证：
+
+```bash
+ping 183ehjez.cn
+ping 185egugn.cn
+```
+
+应解析到 `47.97.176.185`。
+
+---
+
+## 四、阶段 2：本机准备 & 上传代码
+
+### 2.1 确认能 SSH 登录
+
+在 Mac 终端：
+
+```bash
+ssh root@47.97.176.185
+```
+
+- 首次连接输入 `yes` 确认指纹
+- 密码在 ECS 控制台 → **重置密码** 设置（需重启实例生效）
+
+### 2.2 上传项目到服务器
+
+在 Mac 上（**不要**在 SSH 里执行）：
+
+```bash
+cd ~/Desktop/八股
+
+rsync -avz \
+  --exclude 'node_modules' \
+  --exclude '.git' \
+  --exclude '.cursor' \
+  ./ \
+  root@47.97.176.185:/opt/study-platform/
+```
+
+上传后服务器目录结构应为：
+
+```
+/opt/study-platform/
+└── study-platform/
+    ├── server/          ← Node 后端
+    ├── public/          ← 前端页面
+    └── deploy/          ← Nginx 配置 & 安装脚本
+```
+
+验证（SSH 里）：
+
+```bash
+ls /opt/study-platform/study-platform/server/index.js
+```
+
+能看到文件即上传成功。
+
+---
+
+## 五、阶段 3：服务器一键部署
+
+SSH 登录服务器后执行：
+
+```bash
+cd /opt/study-platform/study-platform/deploy
+
+# 把 teacher123 换成你的强密码
+TEACHER_PASSWORD='你的强密码' sudo -E bash ubuntu-setup.sh
+```
+
+脚本会自动完成：
+
+- 安装 Node.js 20、Nginx、pm2
+- `npm install` 安装依赖
+- 配置 Nginx 双域名反代到 `127.0.0.1:3847`
+- pm2 启动并设置开机自启
+
+看到 **✅ 部署完成** 即成功。
+
+### 5.1 部署后自检（服务器上）
+
+```bash
+# Node 是否在跑
+pm2 status
+
+# 本机直连 Node
+curl -I http://127.0.0.1:3847/teacher/
+
+# Nginx 反代是否正常（模拟教师域名）
+curl -I -H "Host: 185egugn.cn" http://127.0.0.1/teacher/
+```
+
+应返回 `HTTP/1.1 200` 或 `302`。
+
+### 5.2 浏览器临时访问（DNS 未生效时）
+
+若 DNS 还没生效，可先在服务器 hosts 或等解析完成。  
+DNS 生效后访问：
+
+- http://183ehjez.cn/student/
+- http://185egugn.cn/teacher/
+
+---
+
+## 六、阶段 4：配置 HTTPS
+
+DNS 解析生效后，在服务器执行：
+
+```bash
+apt install -y certbot python3-certbot-nginx
+
+certbot --nginx \
+  -d 183ehjez.cn -d www.183ehjez.cn \
+  -d 185egugn.cn -d www.185egugn.cn
+```
+
+按提示：
+
+1. 输入邮箱（证书到期提醒）
+2. 同意服务条款
+3. 选择是否跳转 HTTP → HTTPS（建议选 **是**）
+
+证书自动续期：
+
+```bash
+certbot renew --dry-run
+```
+
+完成后用 HTTPS 访问：
+
+- https://183ehjez.cn/student/
+- https://185egugn.cn/teacher/
+
+---
+
+## 七、阶段 5：教师端初始化（首次使用）
+
+1. 打开 https://185egugn.cn/teacher/
+2. 输入部署时设的 **教师密码** 登录
+3. **课表管理**（`/teacher/plan.html`）：
+   - 点击 **导入默认课表**（21 天 Hot 100 全覆盖版）
+   - 点击 **设为活跃课表**
+   - 可选：**同步开课日期** 给所有学员
+4. **学员看板**（`/teacher/dashboard.html`）：
+   - **添加学员** → 填写姓名、批次
+   - 把学员登录链接/账号发给学员
+5. 学员打开 https://183ehjez.cn/student/ 登录打卡
+
+---
+
+## 八、阶段 6：学员使用流程
+
+1. 访问 https://183ehjez.cn/student/
+2. 输入教师分配的姓名登录
+3. 日历中点击 D1、D2… 查看当日任务
+4. 左侧勾选表示完成；算法题可点链接跳转 LeetCode
+5. 八股类任务无外链，学完自行勾选
+
+---
+
+## 九、日常运维
+
+### 9.1 更新代码（改完本地后）
+
+Mac 上重新上传：
+
+```bash
+cd ~/Desktop/八股
+rsync -avz --exclude 'node_modules' --exclude '.git' --exclude '.cursor' \
+  ./ root@47.97.176.185:/opt/study-platform/
+```
+
+服务器上重启：
+
+```bash
+cd /opt/study-platform/study-platform/server
+npm install --production
+pm2 restart study-platform
+```
+
+### 9.2 常用命令
+
+```bash
+pm2 status                  # 进程状态
+pm2 logs study-platform     # 查看日志
+pm2 restart study-platform  # 重启
+nginx -t && systemctl reload nginx   # 重载 Nginx
+```
+
+### 9.3 修改教师密码
+
+```bash
+pm2 delete study-platform
+cd /opt/study-platform/study-platform/server
+TEACHER_PASSWORD='新密码' pm2 start index.js --name study-platform
+pm2 save
+```
+
+### 9.4 数据备份
+
+学员打卡、课表数据在：
+
+```
+/opt/study-platform/study-platform/server/data/store.json
+```
+
+定期下载备份：
+
+```bash
+scp root@47.97.176.185:/opt/study-platform/study-platform/server/data/store.json \
+  ~/Desktop/store-backup-$(date +%Y%m%d).json
+```
+
+---
+
+## 十、故障排查
+
+| 现象 | 可能原因 | 处理 |
+|------|----------|------|
+| 域名无法访问 | DNS 未生效 / 未备案 | 检查解析、备案状态 |
+| `ERR_CONNECTION_REFUSED` | 安全组未放行 80/443 | 检查安全组 |
+| 502 Bad Gateway | Node 未启动 | `pm2 status` → `pm2 restart study-platform` |
+| 教师密码不对 | 环境变量未生效 | 按 9.3 重设并 pm2 save |
+| HTTPS 证书错误 | certbot 未跑成功 | 确认 DNS 已指向本机后重跑 certbot |
+| 学员/教师跳错站 | 域名配置不对 | 检查 `server/data/platform.json` 中 domains |
+
+服务器上快速诊断：
+
+```bash
+pm2 status
+curl -s http://127.0.0.1:3847/teacher/ | head -5
+systemctl status nginx
+```
+
+---
+
+## 十一、本地开发（不影响线上）
+
+在本机 Mac 调试，无需域名：
+
+```bash
+cd ~/Desktop/八股
+./启动学习计划平台.sh
+```
+
+- 学员：http://localhost:3847/student/
+- 教师：http://localhost:3847/teacher/
+- 默认密码：`teacher123`
+
+---
+
+## 附录 A：用 IP 临时访问（未备案 / DNS 未就绪）
+
+在服务器编辑 Nginx，增加：
+
+```nginx
+server {
+    listen 80 default_server;
+    server_name 47.97.176.185;
+    location / {
+        proxy_pass http://127.0.0.1:3847;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+浏览器访问：http://47.97.176.185/teacher/
+
+---
+
+## 附录 B：一键命令速查
+
+```bash
+# ── Mac：上传代码 ──
+cd ~/Desktop/八股 && rsync -avz --exclude node_modules --exclude .git --exclude .cursor ./ root@47.97.176.185:/opt/study-platform/
+
+# ── 服务器：首次部署 ──
+cd /opt/study-platform/study-platform/deploy && TEACHER_PASSWORD='你的密码' sudo -E bash ubuntu-setup.sh
+
+# ── 服务器：HTTPS ──
+apt install -y certbot python3-certbot-nginx && certbot --nginx -d 183ehjez.cn -d www.183ehjez.cn -d 185egugn.cn -d www.185egugn.cn
+
+# ── 服务器：更新后重启 ──
+cd /opt/study-platform/study-platform/server && npm install --production && pm2 restart study-platform
+```
+
+---
+
+**预计总耗时**：代码部署约 15 分钟；DNS 生效 5～30 分钟；备案 7～20 个工作日（可与部署并行）。

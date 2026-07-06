@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学员入口 - 学习计划平台</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/portal.css">
+</head>
+<body class="portal-body portal-student">
+  <div class="portal-wrap">
+    <a class="portal-switch" id="portal-switch" href="/teacher/">教师入口 →</a>
+    <div class="portal-card">
+      <div class="portal-icon">📖</div>
+      <h1>学员登录</h1>
+      <p class="portal-desc">注册 / 登录，按课表完成每日打卡</p>
+      <div id="alert-box"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="input-name" placeholder="请输入真实姓名" required>
+        </div>
+        <div class="form-group">
+          <label>PIN 码（可选）</label>
+          <input type="password" id="input-pin" placeholder="注册时可设置，防止他人代打卡">
+          <div class="form-hint">留空表示不设密码</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submit-btn">登录</button>
+        <p class="portal-toggle">
+          <a href="#" id="toggle-register">还没有账号？立即注册</a>
+        </p>
+      </form>
+    </div>
+    <p class="portal-footer"><a href="/">← 返回首页</a></p>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let mode = 'login';
+    if (API.getToken('student')) location.href = '/student/app.html';
+
+    document.getElementById('toggle-register').onclick = e => {
+      e.preventDefault();
+      mode = mode === 'register' ? 'login' : 'register';
+      document.getElementById('submit-btn').textContent = mode === 'register' ? '注册并进入' : '登录';
+      document.getElementById('toggle-register').textContent =
+        mode === 'register' ? '已有账号？去登录' : '还没有账号？立即注册';
+    };
+
+    document.getElementById('login-form').onsubmit = async e => {
+      e.preventDefault();
+      const alertEl = document.getElementById('alert-box');
+      const btn = document.getElementById('submit-btn');
+      alertEl.innerHTML = '';
+      const name = document.getElementById('input-name').value.trim();
+      if (!name) {
+        alertEl.innerHTML = '<div class="alert alert-error">请输入姓名</div>';
+        return;
+      }
+      btn.disabled = true;
+      const prev = btn.textContent;
+      btn.textContent = '请稍候…';
+      try {
+        const url = mode === 'register' ? '/api/student/register' : '/api/student/login';
+        const data = await API.request(url, {
+          method: 'POST',
+          body: JSON.stringify({ name, pin: document.getElementById('input-pin').value })
+        });
+        API.setToken('student', data.token);
+        API.setStudentName(data.student.name);
+        location.href = '/student/app.html';
+      } catch (err) {
+        alertEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+        btn.disabled = false;
+        btn.textContent = prev;
+      }
+    };
+  </script>
+  <script>
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      const url = cfg.domains?.teacherUrl;
+      if (url) document.getElementById('portal-switch').href = url + '/teacher/';
+    }).catch(() => {});
+  </script>
+</body>
+</html>

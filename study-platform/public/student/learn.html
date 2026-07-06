@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>资料库</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/learn.css">
+</head>
+<body class="reader-body">
+  <header class="topbar student-topbar" style="position:sticky;top:0;z-index:20">
+    <div class="topbar-brand">📚 <span id="topbar-title">资料库</span></div>
+    <div class="topbar-user">
+      <span id="user-name" class="user-pill"></span>
+      <button class="btn btn-sm btn-ghost" onclick="logout()">退出</button>
+    </div>
+  </header>
+  <nav class="student-subnav">
+    <a href="/student/app.html">📅 学习日历</a>
+    <a href="/student/learn.html" class="active">📚 资料库</a>
+  </nav>
+
+  <div class="learn-home">
+    <h1>推荐学习资源</h1>
+    <p class="sub">参照复习建议中的外链资料库，配合日历任务一起学习。</p>
+    <input type="search" class="learn-search" id="search" placeholder="搜索资源，如 MySQL、Hot 100…">
+    <div id="resource-root">加载中…</div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/learn.js"></script>
+  <script>
+    if (!API.getToken('student')) location.href = '/student/';
+
+    API.request('/api/student/me', { headers: API.studentAuth() })
+      .then(me => { document.getElementById('user-name').textContent = me.name; })
+      .catch(() => { location.href = '/student/'; });
+
+    function logout() {
+      API.setToken('student', null);
+      location.href = '/student/';
+    }
+
+    Learn.loadLibrary(
+      document.getElementById('resource-root'),
+      document.getElementById('search')
+    ).catch(e => {
+      document.getElementById('resource-root').textContent = e.message;
+    });
+  </script>
+</body>
+</html>

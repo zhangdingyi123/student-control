@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习计划平台</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="landing">
+    <h1 id="platform-title">学习计划平台</h1>
+    <p id="platform-subtitle">小班辅导 · 每日打卡 · 教师督学</p>
+    <div class="role-cards">
+      <a class="role-card student" href="/student/">
+        <div class="role-icon">📖</div>
+        <h2>学员端</h2>
+        <p>登录打卡、查看每日课表与进度</p>
+      </a>
+      <a class="role-card teacher" href="/teacher/">
+        <div class="role-icon">👨‍🏫</div>
+        <h2>教师端</h2>
+        <p>学员管理、排课规划、进度看板</p>
+      </a>
+    </div>
+    <p style="margin-top:32px;font-size:13px;color:var(--muted)">
+      学员 <code>/student/</code> · 教师 <code>/teacher/</code>
+    </p>
+  </div>
+  <script>
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      if (cfg.platformName) document.getElementById('platform-title').textContent = cfg.platformName;
+      if (cfg.platformSubtitle) document.getElementById('platform-subtitle').textContent = cfg.platformSubtitle;
+      document.title = cfg.platformName || document.title;
+    }).catch(() => {});
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师入口 - 学习计划平台</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/portal.css">
+</head>
+<body class="portal-body portal-teacher">
+  <div class="portal-wrap">
+    <a class="portal-switch" id="portal-switch" href="/student/">学员入口 →</a>
+    <div class="portal-card">
+      <div class="portal-icon">👨‍🏫</div>
+      <h1>教师登录</h1>
+      <p class="portal-desc">查看学员进度、排课规划、小班督学</p>
+      <div id="alert-box"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label>教师密码</label>
+          <input type="password" id="input-password" placeholder="默认 teacher123">
+        </div>
+        <button type="submit" class="btn btn-teacher btn-block" id="submit-btn">进入看板</button>
+      </form>
+    </div>
+    <p class="portal-footer"><a href="/">← 返回首页</a></p>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    if (API.getToken('teacher')) location.href = '/teacher/dashboard.html';
+
+    document.getElementById('login-form').onsubmit = async e => {
+      e.preventDefault();
+      const alertEl = document.getElementById('alert-box');
+      const btn = document.getElementById('submit-btn');
+      alertEl.innerHTML = '';
+      btn.disabled = true;
+      btn.textContent = '请稍候…';
+      try {
+        const data = await API.request('/api/teacher/login', {
+          method: 'POST',
+          body: JSON.stringify({ password: document.getElementById('input-password').value || 'teacher123' })
+        });
+        API.setToken('teacher', data.token);
+        location.href = '/teacher/dashboard.html';
+      } catch (err) {
+        alertEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+        btn.disabled = false;
+        btn.textContent = '进入看板';
+      }
+    };
+  </script>
+  <script>
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      const url = cfg.domains?.studentUrl;
+      if (url) document.getElementById('portal-switch').href = url + '/student/';
+    }).catch(() => {});
+  </script>
+</body>
+</html>
