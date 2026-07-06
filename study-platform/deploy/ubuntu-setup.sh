@@ -16,8 +16,8 @@ NGINX_SITE="/etc/nginx/sites-available/study-platform"
 TEACHER_PW="${TEACHER_PASSWORD:-teacher123}"
 GIT_REPO="${GIT_REPO:-}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
-# 对外端口：8088 与旧项目 80 共存；设为 80 则走 nginx-domains.conf（需域名）
-NGINX_PORT="${NGINX_PORT:-8088}"
+# 对外端口：3850 专用于学习计划；设为 80 则走域名标准端口
+NGINX_PORT="${NGINX_PORT:-3850}"
 
 echo "==> 安装依赖..."
 apt-get update -qq
