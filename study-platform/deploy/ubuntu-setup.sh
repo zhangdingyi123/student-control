@@ -57,7 +57,11 @@ ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/study-platform
 # 不删除 default / 旧项目配置，新域名与旧项目可共存（见 deploy/DEPLOY.md「与旧项目共存」）
 nginx -t
 systemctl enable nginx
-systemctl reload nginx
+if systemctl is-active --quiet nginx; then
+  systemctl reload nginx
+else
+  systemctl start nginx
+fi
 
 echo "==> 启动 Node（pm2）..."
 export TEACHER_PASSWORD="$TEACHER_PW"
