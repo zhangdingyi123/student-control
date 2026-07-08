@@ -107,12 +107,6 @@ pm2 startup systemd -u root --hp /root 2>/dev/null || pm2 startup
 echo ""
 echo "✅ 部署完成"
 echo "   Node:  http://127.0.0.1:3847"
-if [ "$NGINX_PORT" = "80" ]; then
-  echo "   学员:  http://183ehjez.cn/student/"
-  echo "   教师:  http://185egugn.cn/teacher/"
-else
-  echo "   学员:  http://47.97.176.185:${NGINX_PORT}/student/"
-  echo "   教师:  http://47.97.176.185:${NGINX_PORT}/teacher/"
-  echo "   （DNS 生效后也可 http://183ehjez.cn:${NGINX_PORT}/student/ ）"
-fi
+echo "   学员:  http://47.97.176.185:${NGINX_PORT}/student/"
+echo "   教师:  http://47.97.176.185:${NGINX_PORT}/teacher/"
 echo "   教师密码: $TEACHER_PW"

@@ -27,6 +27,7 @@
 | 13 | 数据结构与算法 | [分册/13-数据结构与算法.md](分册/13-数据结构与算法.md) |
 | 14 | Linux / Git / Docker | [分册/14-Linux-Git-Docker.md](分册/14-Linux-Git-Docker.md) |
 | 15 | 复习建议 | [分册/15-复习建议.md](分册/15-复习建议.md) |
+| 16 | Agent 与大模型 | [分册/16-Agent与大模型.md](分册/16-Agent与大模型.md) |
 
 ---
 

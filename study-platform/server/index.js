@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const pu = require('./planUtils');
 const platform = require('./platform');
-const domains = require('./domains');
 const content = require('./content');
 const alerts = require('./alerts');
 const resources = require('./resources');
@@ -19,7 +18,6 @@ const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || 'teacher123';
 
 app.set('trust proxy', true);
 app.use(express.json({ limit: '2mb' }));
-app.use(domains.domainRouter);
 app.use(express.static(path.join(__dirname, '../public')));
 
 function hashToken() {
@@ -115,13 +113,11 @@ app.get('/api/lc-slugs', (_req, res) => {
 // --- Platform config (public) ---
 app.get('/api/config', (_req, res) => {
   const cfg = platform.readConfig();
-  const dom = domains.getDomainConfig();
   res.json({
     platformName: cfg.platformName,
     platformSubtitle: cfg.platformSubtitle,
     defaultTag: cfg.defaultTag,
-    tags: platform.getTags(cfg),
-    domains: dom
+    tags: platform.getTags(cfg)
   });
 });
 
@@ -561,18 +557,8 @@ app.get('*', (_req, res) => {
 ensureDataFile();
 app.listen(PORT, () => {
   console.log(`\n📚 学习计划平台已启动`);
-  const dom = domains.getDomainConfig();
-  console.log(`   本地学员: http://localhost:${PORT}/student/`);
-  console.log(`   本地教师: http://localhost:${PORT}/teacher/`);
-  if (dom.studentDomain || dom.teacherDomain) {
-    console.log(`   ── 线上域名（需 Nginx 反代到 :${PORT}）──`);
-    if (dom.studentDomain) {
-      console.log(`   学员端:   ${dom.studentUrl || dom.studentDomain}/student/`);
-    }
-    if (dom.teacherDomain) {
-      console.log(`   教师端:   ${dom.teacherUrl || dom.teacherDomain}/teacher/`);
-    }
-  }
+  console.log(`   学员端:   http://localhost:${PORT}/student/`);
+  console.log(`   教师端:   http://localhost:${PORT}/teacher/`);
   console.log(`   教师默认密码: ${TEACHER_PASSWORD}`);
   console.log(`   修改密码: TEACHER_PASSWORD=xxx npm start\n`);
 });

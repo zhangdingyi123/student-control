@@ -1,11 +1,6 @@
 {
   "platformName": "学习计划平台",
   "platformSubtitle": "小班辅导 · 每日打卡 · 教师督学",
-  "domains": {
-    "student": "183ehjez.cn",
-    "teacher": "185egugn.cn",
-    "useHttps": false
-  },
   "defaultTag": "学习",
   "tags": ["学习", "八股", "算法", "阅读", "视频", "练习", "复盘", "模拟", "作业", "项目", "其他"],
   "externalResources": [

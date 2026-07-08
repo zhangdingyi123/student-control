@@ -50,11 +50,5 @@
       }
     };
   </script>
-  <script>
-    fetch('/api/config').then(r => r.json()).then(cfg => {
-      const url = cfg.domains?.studentUrl;
-      if (url) document.getElementById('portal-switch').href = url + '/student/';
-    }).catch(() => {});
-  </script>
 </body>
 </html>

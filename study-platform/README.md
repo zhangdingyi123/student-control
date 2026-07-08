@@ -87,36 +87,14 @@ TEACHER_PASSWORD=你的密码 npm start
 
 现有八股分册只是第一个资料库 `bagu-volumes`，以后可以并存多个库。
 
-## 双域名部署（学员 / 教师分离）
-
-在 `server/data/platform.json` 中配置：
-
-```json
-"domains": {
-  "student": "183ehjez.cn",
-  "teacher": "185egugn.cn",
-  "useHttps": true
-}
-```
-
-也可用环境变量覆盖：`STUDENT_DOMAIN`、`TEACHER_DOMAIN`、`USE_HTTPS=true`。
-
-| 域名 | 角色 | 访问 |
-|------|------|------|
-| **183ehjez.cn** | 学员端 | 打开即进 `/student/`，访问 `/teacher` 会跳到教师域名 |
-| **185egugn.cn** | 教师端 | 打开即进 `/teacher/`，访问 `/student` 会跳到学员域名 |
-
-### 上线步骤
+## 线上部署
 
 详见 **`deploy/DEPLOY.md`**（当前服务器 `47.97.176.185` · 华东1 杭州）。
 
-1. **DNS**：两个域名的 A 记录都指向 `47.97.176.185`
-2. **安全组**：放行 80、443
-3. **备案**：大陆 ECS + `.cn` 域名需 ICP 备案
-4. **上传代码** + 运行 `deploy/ubuntu-setup.sh`
-5. **SSL**：`certbot --nginx` 申请证书
+- 学员：http://47.97.176.185:3850/student/
+- 教师：http://47.97.176.185:3850/teacher/
 
-本地开发不设域名时，仍用 `localhost:3847/student/` 与 `/teacher/`。
+上传代码后运行 `deploy/ubuntu-setup.sh` 或 `deploy/git-pull-update.sh` 更新。
 
 ## 局域网访问
 
